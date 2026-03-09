@@ -1,0 +1,135 @@
+/* ─── DEVTRACK – Global Styles ─────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+/* ─── CSS VARIABLES ──────────────────────────────────────────────────────────*/
+:root {
+  /* Background layers */
+  --bg-base:      #0A0A0F;
+  --bg-surface:   rgba(255,255,255,0.03);
+  --bg-elevated:  rgba(255,255,255,0.06);
+
+  /* Borders */
+  --border:       rgba(255,255,255,0.07);
+  --border-mid:   rgba(255,255,255,0.12);
+
+  /* Text */
+  --text-primary:   #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted:     #64748B;
+
+  /* Accent palette */
+  --accent-green:  #6EE7B7;
+  --accent-blue:   #93C5FD;
+  --accent-red:    #FCA5A5;
+  --accent-yellow: #FCD34D;
+  --accent-purple: #C4B5FD;
+  --accent-cyan:   #6EE7F7;
+  --accent-pink:   #F472B6;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* Fonts */
+  --font-mono: 'DM Mono', 'Fira Code', monospace;
+  --font-ui:   'Space Grotesk', sans-serif;
+}
+
+/* ─── RESET ──────────────────────────────────────────────────────────────────*/
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  min-height: 100vh;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────────*/
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 2px; }
+
+/* ─── ANIMATIONS ─────────────────────────────────────────────────────────────*/
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.4; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── UTILITY CLASSES ────────────────────────────────────────────────────────*/
+.fade-up  { animation: fadeUp  0.35s ease both; }
+.slide-in { animation: slideIn 0.3s  ease both; }
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.18s ease;
+}
+.btn-primary {
+  background: var(--accent-green);
+  color: #000;
+}
+.btn-primary:hover { filter: brightness(1.12); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+input, select, textarea {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-green);
+}
