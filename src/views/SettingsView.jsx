@@ -154,20 +154,52 @@ function DataSection({ entries, categories, projects, goals, onRestore, showNoti
 }
 
 function GoalsSection({ goals, setGoals, showNotif }) {
-  const [daily,  setDaily]  = useState(goals.daily  / 3600);
-  const [weekly, setWeekly] = useState(goals.weekly / 3600);
-  const save = () => setGoals({ daily: daily * 3600, weekly: weekly * 3600 });
+  const [dailyH,  setDailyH]  = useState(Math.floor(goals.daily  / 3600));
+  const [dailyM,  setDailyM]  = useState(Math.floor((goals.daily  % 3600) / 60));
+  const [weeklyH, setWeeklyH] = useState(Math.floor(goals.weekly / 3600));
+  const [weeklyM, setWeeklyM] = useState(Math.floor((goals.weekly % 3600) / 60));
+
+  const save = () => {
+    const daily  = dailyH  * 3600 + dailyM  * 60;
+    const weekly = weeklyH * 3600 + weeklyM * 60;
+    if (daily  <= 0) { showNotif("Daily goal must be > 0", "error"); return; }
+    if (weekly <= 0) { showNotif("Weekly goal must be > 0", "error"); return; }
+    setGoals({ daily, weekly });
+    showNotif("Goals saved!");
+  };
+
+  const inputStyle = { background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:"8px 12px", color:"#E2E8F0", fontSize:13, fontFamily:"inherit", width:"100%", outline:"none" };
 
   return (
     <Card>
       <SectionTitle>PRODUCTIVITY GOALS</SectionTitle>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginTop:16 }}>
-        <Field label="DAILY GOAL (hours)">
-          <NumberInput value={daily}  onChange={setDaily}  min={0.5} max={24}  step={0.5} />
-        </Field>
-        <Field label="WEEKLY GOAL (hours)">
-          <NumberInput value={weekly} onChange={setWeekly} min={1}   max={168} step={1} />
-        </Field>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24, marginTop:16 }}>
+        <div>
+          <div style={{ fontSize:10, color:"#475569", letterSpacing:"0.08em", marginBottom:8, fontWeight:700 }}>DAILY GOAL</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <div style={{ flex:1, position:"relative" }}>
+              <input type="number" min={0} max={23} value={dailyH} onChange={(e)=>setDailyH(+e.target.value)} style={inputStyle} />
+              <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:10, color:"#64748B" }}>hrs</span>
+            </div>
+            <div style={{ flex:1, position:"relative" }}>
+              <input type="number" min={0} max={59} value={dailyM} onChange={(e)=>setDailyM(+e.target.value)} style={inputStyle} />
+              <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:10, color:"#64748B" }}>min</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize:10, color:"#475569", letterSpacing:"0.08em", marginBottom:8, fontWeight:700 }}>WEEKLY GOAL</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <div style={{ flex:1, position:"relative" }}>
+              <input type="number" min={0} max={167} value={weeklyH} onChange={(e)=>setWeeklyH(+e.target.value)} style={inputStyle} />
+              <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:10, color:"#64748B" }}>hrs</span>
+            </div>
+            <div style={{ flex:1, position:"relative" }}>
+              <input type="number" min={0} max={59} value={weeklyM} onChange={(e)=>setWeeklyM(+e.target.value)} style={inputStyle} />
+              <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:10, color:"#64748B" }}>min</span>
+            </div>
+          </div>
+        </div>
       </div>
       <SaveBtn onClick={save} />
     </Card>

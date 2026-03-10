@@ -4,7 +4,7 @@ import { Card }              from "../components/Card";
 import { ManualEntryModal }  from "../components/ManualEntryModal";
 import { useTimer }          from "../hooks/useTimer";
 import { usePomodoro }       from "../hooks/usePomodoro";
-import { fmt, fmtH, today }  from "../utils/helpers";
+import { fmt, fmtDuration, today }  from "../utils/helpers";
 
 /**
  * TimerView — stopwatch session tracker + Pomodoro panel + manual entry.
@@ -129,6 +129,29 @@ export function TimerView({ entries, categories, projects, addEntry, showNotif }
               </div>
             </div>
 
+            {/* Project picker */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 10, color: "#64748B", letterSpacing: "0.08em", marginBottom: 8, fontWeight: 700 }}>
+                PROJECT (OPTIONAL)
+              </div>
+              <select
+                value={timer.sessionMeta.projectId || ""}
+                onChange={(e) => !timer.isRunning && timer.setSessionMeta((p) => ({ ...p, projectId: e.target.value }))}
+                disabled={timer.isRunning}
+                style={{
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 8, color: "#E2E8F0", fontFamily: "inherit", fontSize: 13,
+                  padding: "8px 12px", width: "60%", outline: "none",
+                  cursor: timer.isRunning ? "default" : "pointer",
+                }}
+              >
+                <option value="">No project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Clock display */}
             <div
               style={{
@@ -195,7 +218,7 @@ export function TimerView({ entries, categories, projects, addEntry, showNotif }
               >
                 <div style={{ fontSize: 11, color: "#6EE7B7", fontWeight: 700, marginBottom: 8 }}>SAVE SESSION?</div>
                 <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 12 }}>
-                  Duration: <strong style={{ color: "#fff" }}>{fmtH(pendingResult.duration)}</strong>
+                  Duration: <strong style={{ color: "#fff" }}>{fmtDuration(pendingResult.duration)}</strong>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <ActionBtn color="#6EE7B7" onClick={handleConfirm} small>✓ SAVE</ActionBtn>
@@ -256,7 +279,7 @@ export function TimerView({ entries, categories, projects, addEntry, showNotif }
               TODAY'S LOG
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 4 }}>
-              {fmtH(todayTotal)}
+              {fmtDuration(todayTotal)}
             </div>
             <div style={{ fontSize: 11, color: "#475569" }}>
               {entries.filter((e) => e.date === today()).length} sessions
@@ -287,7 +310,7 @@ export function TimerView({ entries, categories, projects, addEntry, showNotif }
                     >
                       <div style={{ width: 8, height: 8, borderRadius: "50%", background: cat?.color || "#475569", flexShrink: 0 }} />
                       <span style={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>{cat?.name}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{fmtH(e.duration)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{fmtDuration(e.duration)}</span>
                     </div>
                   );
                 })}
