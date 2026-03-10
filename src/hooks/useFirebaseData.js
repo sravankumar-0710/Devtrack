@@ -79,8 +79,20 @@ export function useFirebaseData(uid) {
     saveCategories(updated);
   };
 
+  const deleteCategory = (id) => {
+    const updated = categories.filter((c) => c.id !== id);
+    setCategories(updated);
+    saveCategories(updated);
+  };
+
   const addProject = (p) => {
     const updated = [...projects, { ...p, id: Date.now().toString() }];
+    setProjects(updated);
+    saveProjects(updated);
+  };
+
+  const deleteProject = (id) => {
+    const updated = projects.filter((p) => p.id !== id);
     setProjects(updated);
     saveProjects(updated);
   };
@@ -106,7 +118,8 @@ export function useFirebaseData(uid) {
 
   return {
     entries, categories, projects, goals, synced,
-    addEntry, deleteEntry, addCategory, addProject, updateGoals, onRestore,
+    addEntry, deleteEntry, addCategory, deleteCategory,
+    addProject, deleteProject, updateGoals, onRestore,
   };
 }
 

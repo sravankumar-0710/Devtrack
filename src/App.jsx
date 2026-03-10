@@ -35,7 +35,8 @@ export default function App() {
   // ── Firebase data — only active when user is signed in ─────────────────────
   const {
     entries, categories, projects, goals, synced,
-    addEntry, deleteEntry, addCategory, addProject, updateGoals, onRestore,
+    addEntry, deleteEntry, addCategory, deleteCategory,
+    addProject, deleteProject, updateGoals, onRestore,
   } = useFirebaseData(user?.uid);
 
   // ── Notification helper ─────────────────────────────────────────────────────
@@ -100,11 +101,12 @@ export default function App() {
 
   const sharedProps = {
     entries, categories, projects, goals,
-    setGoals:    handleGoals,
-    addEntry:    handleAddEntry,
-    deleteEntry: handleDelete,
-    addProject, addCategory,
-    onRestore:   handleRestore,
+    setGoals:       handleGoals,
+    addEntry:       handleAddEntry,
+    deleteEntry:    handleDelete,
+    addCategory,    deleteCategory,
+    addProject,     deleteProject,
+    onRestore:      handleRestore,
     todaySeconds, weekSeconds, streak,
     showNotif,
     user, logout,

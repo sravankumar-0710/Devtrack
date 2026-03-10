@@ -1,6 +1,6 @@
 import { BarChart2, Clock, TrendingUp, Settings, LogOut } from "lucide-react";
 import { NAV_ITEMS } from "../data/constants";
-import { fmtH } from "../utils/helpers";
+import { fmtDuration } from "../utils/helpers";
 
 const NAV_ICONS = { dashboard: BarChart2, timer: Clock, reports: TrendingUp, settings: Settings };
 
@@ -74,7 +74,7 @@ export function Header({ view, setView, streak, todaySeconds, user, logout }) {
           background: "rgba(110,231,183,0.1)", color: "#6EE7B7",
           padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
         }}>
-          TODAY {fmtH(todaySeconds)}
+          TODAY {fmtDuration(todaySeconds)}
         </span>
 
         {/* User avatar + logout */}

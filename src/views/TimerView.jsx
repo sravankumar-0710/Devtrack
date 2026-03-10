@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Play, Square, Plus, Edit3, Timer, SkipForward, RefreshCw } from "lucide-react";
+import { useState, useRef } from "react";
+import { Play, Square, Edit3, SkipForward, RefreshCw, Plus, X, Check } from "lucide-react";
 import { Card }              from "../components/Card";
 import { ManualEntryModal }  from "../components/ManualEntryModal";
 import { useTimer }          from "../hooks/useTimer";
@@ -11,10 +11,22 @@ import { fmt, fmtDuration, today }  from "../utils/helpers";
  *
  * Props: entries, categories, projects, addEntry, showNotif
  */
-export function TimerView({ entries, categories, projects, addEntry, showNotif }) {
-  const [tab,           setTab]           = useState("stopwatch"); // "stopwatch" | "pomodoro"
+export function TimerView({ entries, categories, projects, addEntry, addCategory, deleteCategory, showNotif }) {
+  const [tab,           setTab]           = useState("stopwatch");
   const [showManual,    setShowManual]    = useState(false);
-  const [pendingResult, setPendingResult] = useState(null); // after stop, confirm form
+  const [pendingResult, setPendingResult] = useState(null);
+  const [editingCats,   setEditingCats]   = useState(false);
+  const [newCatName,    setNewCatName]    = useState("");
+  const [newCatColor,   setNewCatColor]   = useState("#6EE7B7");
+
+  const CAT_COLORS = ["#6EE7B7","#93C5FD","#FCA5A5","#FCD34D","#C4B5FD","#6EE7F7","#F472B6","#34D399","#FB923C","#A78BFA"];
+
+  const handleAddCategory = () => {
+    if (!newCatName.trim()) return;
+    addCategory({ name: newCatName.trim(), color: newCatColor, icon: "BookOpen" });
+    setNewCatName("");
+    showNotif(`"${newCatName.trim()}" added!`);
+  };
 
   const timer    = useTimer();
   const pomodoro = usePomodoro();
@@ -101,32 +113,77 @@ export function TimerView({ entries, categories, projects, addEntry, showNotif }
         {tab === "stopwatch" ? (
           <Card style={{ textAlign: "center", padding: 40 }}>
             {/* Category picker */}
-            <div style={{ marginBottom: 32 }}>
-              <div style={{ fontSize: 10, color: "#64748B", letterSpacing: "0.08em", marginBottom: 10, fontWeight: 700 }}>
-                ACTIVITY
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-                {categories.map((c) => (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
+                <div style={{ fontSize:10, color:"#64748B", letterSpacing:"0.08em", fontWeight:700 }}>ACTIVITY</div>
+                {!timer.isRunning && (
                   <button
-                    key={c.id}
-                    onClick={() => !timer.isRunning && timer.setSessionMeta((p) => ({ ...p, categoryId: c.id }))}
-                    style={{
-                      padding:      "6px 14px",
-                      borderRadius: 20,
-                      border:       `1px solid ${timer.sessionMeta.categoryId === c.id ? c.color : "rgba(255,255,255,0.1)"}`,
-                      background:   timer.sessionMeta.categoryId === c.id ? `${c.color}22` : "transparent",
-                      color:        timer.sessionMeta.categoryId === c.id ? c.color : "#64748B",
-                      cursor:       timer.isRunning ? "default" : "pointer",
-                      fontSize:     12,
-                      fontFamily:   "inherit",
-                      fontWeight:   600,
-                      transition:   "all 0.15s",
-                    }}
+                    onClick={() => setEditingCats((e) => !e)}
+                    style={{ background:"transparent", border:`1px solid ${editingCats?"rgba(110,231,183,0.4)":"rgba(255,255,255,0.1)"}`, borderRadius:6, padding:"2px 8px", color:editingCats?"#6EE7B7":"#475569", cursor:"pointer", fontSize:10, fontFamily:"inherit", fontWeight:700 }}
                   >
-                    {c.name}
+                    {editingCats ? "✓ DONE" : "✎ EDIT"}
                   </button>
+                )}
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
+                {categories.map((c) => (
+                  <div key={c.id} style={{ position:"relative", display:"inline-flex", alignItems:"center" }}>
+                    <button
+                      onClick={() => !timer.isRunning && !editingCats && timer.setSessionMeta((p) => ({ ...p, categoryId: c.id }))}
+                      style={{
+                        padding:      editingCats ? "6px 28px 6px 14px" : "6px 14px",
+                        borderRadius: 20,
+                        border:       `1px solid ${timer.sessionMeta.categoryId === c.id ? c.color : "rgba(255,255,255,0.1)"}`,
+                        background:   timer.sessionMeta.categoryId === c.id ? `${c.color}22` : "transparent",
+                        color:        timer.sessionMeta.categoryId === c.id ? c.color : "#64748B",
+                        cursor:       (timer.isRunning || editingCats) ? "default" : "pointer",
+                        fontSize:     12, fontFamily:"inherit", fontWeight:600, transition:"all 0.15s",
+                      }}
+                    >
+                      {c.name}
+                    </button>
+                    {editingCats && (
+                      <button
+                        onClick={() => {
+                          if (categories.length <= 1) { showNotif("Need at least 1 category", "error"); return; }
+                          if (timer.sessionMeta.categoryId === c.id) timer.setSessionMeta((p) => ({ ...p, categoryId: "" }));
+                          deleteCategory(c.id);
+                          showNotif(`"${c.name}" removed`);
+                        }}
+                        style={{
+                          position:"absolute", right:6, top:"50%", transform:"translateY(-50%)",
+                          background:"rgba(252,165,165,0.2)", border:"none", borderRadius:"50%",
+                          width:16, height:16, display:"flex", alignItems:"center", justifyContent:"center",
+                          cursor:"pointer", padding:0, color:"#FCA5A5",
+                        }}
+                      >
+                        <X size={10} />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
+
+              {/* Add new category inline */}
+              {editingCats && (
+                <div style={{ marginTop:14, display:"flex", gap:8, alignItems:"center", justifyContent:"center", flexWrap:"wrap" }}>
+                  <input
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
+                    placeholder="New activity name…"
+                    style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:8, padding:"6px 12px", color:"#E2E8F0", fontSize:12, fontFamily:"inherit", outline:"none", width:180 }}
+                  />
+                  <div style={{ display:"flex", gap:4 }}>
+                    {CAT_COLORS.map((col) => (
+                      <div key={col} onClick={() => setNewCatColor(col)} style={{ width:18, height:18, borderRadius:"50%", background:col, cursor:"pointer", border: newCatColor===col?"2px solid #fff":"2px solid transparent", transition:"border 0.1s" }} />
+                    ))}
+                  </div>
+                  <button onClick={handleAddCategory} style={{ background:"rgba(110,231,183,0.15)", border:"1px solid rgba(110,231,183,0.3)", borderRadius:8, padding:"6px 12px", color:"#6EE7B7", cursor:"pointer", fontSize:12, fontFamily:"inherit", fontWeight:700, display:"flex", alignItems:"center", gap:4 }}>
+                    <Plus size={12} /> ADD
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Project picker */}

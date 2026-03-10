@@ -7,8 +7,8 @@ const PALETTE = ["#6EE7B7","#93C5FD","#FCA5A5","#FCD34D","#C4B5FD","#6EE7F7","#F
 
 export function SettingsView({
   entries, categories, projects, goals,
-  setGoals, addCategory, addProject, showNotif,
-  onRestore,
+  setGoals, addCategory, deleteCategory, addProject, deleteProject,
+  showNotif, onRestore,
 }) {
   return (
     <div style={{ padding: 28, maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
@@ -18,8 +18,8 @@ export function SettingsView({
         onRestore={onRestore} showNotif={showNotif}
       />
       <GoalsSection    goals={goals} setGoals={setGoals} showNotif={showNotif} />
-      <CategoriesSection categories={categories} addCategory={addCategory} showNotif={showNotif} />
-      <ProjectsSection   projects={projects} addProject={addProject} showNotif={showNotif} />
+      <CategoriesSection categories={categories} addCategory={addCategory} deleteCategory={deleteCategory} showNotif={showNotif} />
+      <ProjectsSection   projects={projects} addProject={addProject} deleteProject={deleteProject} showNotif={showNotif} />
     </div>
   );
 }
@@ -206,7 +206,7 @@ function GoalsSection({ goals, setGoals, showNotif }) {
   );
 }
 
-function CategoriesSection({ categories, addCategory, showNotif }) {
+function CategoriesSection({ categories, addCategory, deleteCategory, showNotif }) {
   const [name,  setName]  = useState("");
   const [color, setColor] = useState(PALETTE[0]);
 
@@ -220,14 +220,30 @@ function CategoriesSection({ categories, addCategory, showNotif }) {
   return (
     <Card>
       <SectionTitle>CATEGORIES</SectionTitle>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:16 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:16 }}>
         {categories.map((c) => (
-          <div key={c.id} style={{ padding:"6px 14px", borderRadius:20, border:`1px solid ${c.color}40`, background:`${c.color}12`, color:c.color, fontSize:12, fontWeight:600 }}>
-            {c.name}
+          <div key={c.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 14px", borderRadius:10, border:`1px solid ${c.color}30`, background:`${c.color}08` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:10, height:10, borderRadius:"50%", background:c.color }} />
+              <span style={{ fontSize:13, color:c.color, fontWeight:600 }}>{c.name}</span>
+            </div>
+            <button
+              onClick={() => {
+                if (categories.length <= 1) { showNotif("Need at least 1 category", "error"); return; }
+                deleteCategory(c.id);
+                showNotif(`"${c.name}" removed`, "info");
+              }}
+              style={{ background:"transparent", border:"none", cursor:"pointer", color:"#475569", padding:4, borderRadius:4, display:"flex", alignItems:"center", transition:"color 0.15s" }}
+              onMouseEnter={(e) => e.currentTarget.style.color="#FCA5A5"}
+              onMouseLeave={(e) => e.currentTarget.style.color="#475569"}
+              title="Delete category"
+            >
+              <Trash2 size={13} />
+            </button>
           </div>
         ))}
       </div>
-      <div style={{ display:"flex", gap:10, marginTop:20, alignItems:"flex-end" }}>
+      <div style={{ display:"flex", gap:10, marginTop:16, alignItems:"flex-end" }}>
         <Field label="NEW CATEGORY NAME" style={{ flex:1 }}>
           <TextInput value={name} onChange={setName} placeholder="e.g. System Design" />
         </Field>
@@ -240,7 +256,7 @@ function CategoriesSection({ categories, addCategory, showNotif }) {
   );
 }
 
-function ProjectsSection({ projects, addProject, showNotif }) {
+function ProjectsSection({ projects, addProject, deleteProject, showNotif }) {
   const [name,  setName]  = useState("");
   const [color, setColor] = useState(PALETTE[4]);
 
@@ -257,9 +273,20 @@ function ProjectsSection({ projects, addProject, showNotif }) {
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:16 }}>
         {projects.length === 0 && <span style={{ fontSize:12, color:"#475569" }}>No projects yet.</span>}
         {projects.map((p) => (
-          <div key={p.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderRadius:8, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ width:10, height:10, borderRadius:"50%", background:p.color }} />
-            <span style={{ fontSize:13, color:"#94A3B8" }}>{p.name}</span>
+          <div key={p.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderRadius:8, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:10, height:10, borderRadius:"50%", background:p.color }} />
+              <span style={{ fontSize:13, color:"#94A3B8" }}>{p.name}</span>
+            </div>
+            <button
+              onClick={() => { deleteProject(p.id); showNotif(`"${p.name}" removed`, "info"); }}
+              style={{ background:"transparent", border:"none", cursor:"pointer", color:"#475569", padding:4, borderRadius:4, display:"flex", alignItems:"center", transition:"color 0.15s" }}
+              onMouseEnter={(e) => e.currentTarget.style.color="#FCA5A5"}
+              onMouseLeave={(e) => e.currentTarget.style.color="#475569"}
+              title="Delete project"
+            >
+              <Trash2 size={13} />
+            </button>
           </div>
         ))}
       </div>
