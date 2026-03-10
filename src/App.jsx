@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Firebase
 import { useAuth }         from "./hooks/useAuth";
@@ -6,6 +6,9 @@ import { useFirebaseData } from "./hooks/useFirebaseData";
 
 // Utils
 import { calcStreak, today } from "./utils/helpers";
+
+// Hooks
+import { useActivityGoalNotifications } from "./hooks/useActivityGoalNotifications";
 
 // Components
 import { Header }       from "./components/Header";
@@ -34,10 +37,17 @@ export default function App() {
 
   // ── Firebase data — only active when user is signed in ─────────────────────
   const {
-    entries, categories, projects, goals, synced,
-    addEntry, deleteEntry, addCategory, deleteCategory,
-    addProject, deleteProject, updateGoals, onRestore,
+    entries, categories, projects, goals, activityGoals, synced,
+    addEntry, deleteEntry,
+    addCategory, deleteCategory,
+    addProject, deleteProject,
+    updateGoals,
+    addActivityGoal, updateActivityGoal, deleteActivityGoal,
+    onRestore,
   } = useFirebaseData(user?.uid);
+
+  // ── Activity goal notifications ─────────────────────────────────────────────
+  useActivityGoalNotifications(activityGoals, entries, categories);
 
   // ── Notification helper ─────────────────────────────────────────────────────
   const showNotif = (msg, type = "success") => {
@@ -100,13 +110,14 @@ export default function App() {
   const ActiveView = VIEW_MAP[view] || Dashboard;
 
   const sharedProps = {
-    entries, categories, projects, goals,
-    setGoals:       handleGoals,
-    addEntry:       handleAddEntry,
-    deleteEntry:    handleDelete,
-    addCategory,    deleteCategory,
-    addProject,     deleteProject,
-    onRestore:      handleRestore,
+    entries, categories, projects, goals, activityGoals,
+    setGoals:            handleGoals,
+    addEntry:            handleAddEntry,
+    deleteEntry:         handleDelete,
+    addCategory,         deleteCategory,
+    addProject,          deleteProject,
+    addActivityGoal,     updateActivityGoal, deleteActivityGoal,
+    onRestore:           handleRestore,
     todaySeconds, weekSeconds, streak,
     showNotif,
     user, logout,

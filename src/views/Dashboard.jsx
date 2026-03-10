@@ -3,15 +3,16 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Clock, Calendar, Flame, Zap } from "lucide-react";
-import { Card }     from "../components/Card";
-import { StatCard } from "../components/StatCard";
-import { GoalBar }  from "../components/GoalBar";
+import { Card }              from "../components/Card";
+import { StatCard }          from "../components/StatCard";
+import { GoalBar }           from "../components/GoalBar";
+import { ActivityGoalCard }  from "../components/ActivityGoalCard";
 import {
   fmtDuration, fmtH, today,
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
 
-export function Dashboard({ entries, categories, projects, goals, todaySeconds, weekSeconds, streak }) {
+export function Dashboard({ entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak }) {
   const dailyData     = buildDailyChartData(entries);
   const catData       = buildCategoryData(entries, categories);
   const weekTrend     = buildMonthlyTrendData(entries);
@@ -68,6 +69,38 @@ export function Dashboard({ entries, categories, projects, goals, todaySeconds, 
         <GoalBar label="DAILY GOAL"  current={todaySeconds} target={goals.daily}  color="#6EE7B7" />
         <GoalBar label="WEEKLY GOAL" current={weekSeconds}  target={goals.weekly} color="#93C5FD" />
       </div>
+
+      {/* ACTIVITY GOALS */}
+      {activityGoals?.length > 0 && (() => {
+        const todayDay    = new Date().getDay();
+        const todayStr    = today();
+        const todayGoals  = activityGoals.filter((g) => g.enabled && (g.days || [0,1,2,3,4,5,6]).includes(todayDay));
+        if (!todayGoals.length) return null;
+        const allDone     = todayGoals.every((g) => {
+          const done = entries.filter((e) => e.date === todayStr && e.categoryId === g.categoryId).reduce((a,b) => a+b.duration, 0);
+          return done >= g.targetSeconds;
+        });
+        return (
+          <Card style={{ marginBottom:24 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <SectionLabel style={{ marginBottom:0 }}>TODAY'S ACTIVITY GOALS</SectionLabel>
+              <span style={{ fontSize:11, fontWeight:700, color: allDone ? "#6EE7B7" : "#FCA5A5" }}>
+                {todayGoals.filter((g) => {
+                  const done = entries.filter((e) => e.date === todayStr && e.categoryId === g.categoryId).reduce((a,b)=>a+b.duration,0);
+                  return done >= g.targetSeconds;
+                }).length} / {todayGoals.length} complete
+              </span>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:10 }}>
+              {todayGoals.map((goal) => {
+                const cat     = categories.find((c) => c.id === goal.categoryId);
+                const doneSecs = entries.filter((e) => e.date === todayStr && e.categoryId === goal.categoryId).reduce((a,b)=>a+b.duration,0);
+                return <ActivityGoalCard key={goal.id} goal={goal} category={cat} doneSecs={doneSecs} />;
+              })}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* THIS WEEK + CATEGORY */}
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:16, marginBottom:24 }}>
@@ -221,9 +254,9 @@ export function Dashboard({ entries, categories, projects, goals, todaySeconds, 
   );
 }
 
-function SectionLabel({ children }) {
+function SectionLabel({ children, style = {} }) {
   return (
-    <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", color:"#64748B", marginBottom:12 }}>
+    <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", color:"#64748B", marginBottom:12, ...style }}>
       {children}
     </div>
   );

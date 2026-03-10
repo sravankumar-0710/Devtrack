@@ -12,16 +12,15 @@ import { PRESET_CATEGORIES, PRESET_PROJECTS, DEFAULT_GOALS } from "../data/const
  * @returns app data + setters
  */
 export function useFirebaseData(uid) {
-  const [entries,    setEntries]    = useState([]);
-  const [categories, setCategories] = useState(PRESET_CATEGORIES);
-  const [projects,   setProjects]   = useState(PRESET_PROJECTS);
-  const [goals,      setGoals]      = useState(DEFAULT_GOALS);
-  const [synced,     setSynced]     = useState(false);
+  const [entries,       setEntries]       = useState([]);
+  const [categories,    setCategories]    = useState(PRESET_CATEGORIES);
+  const [projects,      setProjects]      = useState(PRESET_PROJECTS);
+  const [goals,         setGoals]         = useState(DEFAULT_GOALS);
+  const [activityGoals, setActivityGoals] = useState([]);
+  const [synced,        setSynced]        = useState(false);
 
-  // Track if we've received the first snapshot (to avoid overwriting on mount)
   const initialized = useRef(false);
 
-  // ── Subscribe to Firebase on mount ─────────────────────────────────────────
   useEffect(() => {
     if (!uid) return;
 
@@ -29,21 +28,19 @@ export function useFirebaseData(uid) {
     const unsub = onValue(userRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Convert entries object back to array (Firebase stores arrays as objects)
-        const entriesArr = data.entries
-          ? Object.values(data.entries)
-          : [];
+        const entriesArr = data.entries ? Object.values(data.entries) : [];
         setEntries(entriesArr);
-        setCategories(data.categories ? Object.values(data.categories) : PRESET_CATEGORIES);
-        setProjects(data.projects     ? Object.values(data.projects)   : PRESET_PROJECTS);
-        setGoals(data.goals           || DEFAULT_GOALS);
+        setCategories(data.categories    ? Object.values(data.categories)    : PRESET_CATEGORIES);
+        setProjects(data.projects        ? Object.values(data.projects)      : PRESET_PROJECTS);
+        setGoals(data.goals              || DEFAULT_GOALS);
+        setActivityGoals(data.activityGoals ? Object.values(data.activityGoals) : []);
       } else {
-        // First time user — write defaults to database
         set(ref(db, `users/${uid}`), {
-          entries:    {},
-          categories: arrayToObject(PRESET_CATEGORIES),
-          projects:   arrayToObject(PRESET_PROJECTS),
-          goals:      DEFAULT_GOALS,
+          entries:       {},
+          categories:    arrayToObject(PRESET_CATEGORIES),
+          projects:      arrayToObject(PRESET_PROJECTS),
+          goals:         DEFAULT_GOALS,
+          activityGoals: {},
         });
       }
       initialized.current = true;
@@ -53,11 +50,12 @@ export function useFirebaseData(uid) {
     return unsub;
   }, [uid]);
 
-  // ── Write helpers — each writes only its slice to Firebase ─────────────────
-  const saveEntries    = (arr) => set(ref(db, `users/${uid}/entries`),    arrayToObject(arr));
-  const saveCategories = (arr) => set(ref(db, `users/${uid}/categories`), arrayToObject(arr));
-  const saveProjects   = (arr) => set(ref(db, `users/${uid}/projects`),   arrayToObject(arr));
-  const saveGoals      = (obj) => set(ref(db, `users/${uid}/goals`),      obj);
+  // ── Write helpers ─────────────────────────────────────────────────────────
+  const saveEntries       = (arr) => set(ref(db, `users/${uid}/entries`),       arrayToObject(arr));
+  const saveCategories    = (arr) => set(ref(db, `users/${uid}/categories`),    arrayToObject(arr));
+  const saveProjects      = (arr) => set(ref(db, `users/${uid}/projects`),      arrayToObject(arr));
+  const saveGoals         = (obj) => set(ref(db, `users/${uid}/goals`),         obj);
+  const saveActivityGoals = (arr) => set(ref(db, `users/${uid}/activityGoals`), arrayToObject(arr));
 
   // ── Mutations ───────────────────────────────────────────────────────────────
   const addEntry = (entry) => {
@@ -97,29 +95,53 @@ export function useFirebaseData(uid) {
     saveProjects(updated);
   };
 
+  const addActivityGoal = (goal) => {
+    const updated = [...activityGoals, { ...goal, id: Date.now().toString() }];
+    setActivityGoals(updated);
+    saveActivityGoals(updated);
+  };
+
+  const updateActivityGoal = (id, patch) => {
+    const updated = activityGoals.map((g) => g.id === id ? { ...g, ...patch } : g);
+    setActivityGoals(updated);
+    saveActivityGoals(updated);
+  };
+
+  const deleteActivityGoal = (id) => {
+    const updated = activityGoals.filter((g) => g.id !== id);
+    setActivityGoals(updated);
+    saveActivityGoals(updated);
+  };
+
   const updateGoals = (newGoals) => {
     setGoals(newGoals);
     saveGoals(newGoals);
   };
 
   const onRestore = (backup) => {
-    const e = backup.entries    || [];
-    const c = backup.categories || PRESET_CATEGORIES;
-    const p = backup.projects   || PRESET_PROJECTS;
-    const g = backup.goals      || DEFAULT_GOALS;
-    setEntries(e); setCategories(c); setProjects(p); setGoals(g);
+    const e  = backup.entries       || [];
+    const c  = backup.categories    || PRESET_CATEGORIES;
+    const p  = backup.projects      || PRESET_PROJECTS;
+    const g  = backup.goals         || DEFAULT_GOALS;
+    const ag = backup.activityGoals || [];
+    setEntries(e); setCategories(c); setProjects(p); setGoals(g); setActivityGoals(ag);
     set(ref(db, `users/${uid}`), {
-      entries:    arrayToObject(e),
-      categories: arrayToObject(c),
-      projects:   arrayToObject(p),
-      goals:      g,
+      entries:       arrayToObject(e),
+      categories:    arrayToObject(c),
+      projects:      arrayToObject(p),
+      goals:         g,
+      activityGoals: arrayToObject(ag),
     });
   };
 
   return {
-    entries, categories, projects, goals, synced,
-    addEntry, deleteEntry, addCategory, deleteCategory,
-    addProject, deleteProject, updateGoals, onRestore,
+    entries, categories, projects, goals, activityGoals, synced,
+    addEntry, deleteEntry,
+    addCategory, deleteCategory,
+    addProject, deleteProject,
+    updateGoals,
+    addActivityGoal, updateActivityGoal, deleteActivityGoal,
+    onRestore,
   };
 }
 
