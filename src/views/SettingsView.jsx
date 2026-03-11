@@ -260,6 +260,14 @@ function ActivityGoalsSection({ activityGoals, categories, addActivityGoal, upda
         )}
         {activityGoals.map((goal) => {
           const cat = categories.find((c) => c.id === goal.categoryId);
+          const fmtTs = (iso) => {
+            if (!iso) return null;
+            const d = new Date(iso);
+            return `${d.toLocaleDateString()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+          };
+          const tsLabel = goal.updatedAt && goal.updatedAt !== goal.createdAt
+            ? `updated ${fmtTs(goal.updatedAt)}`
+            : goal.createdAt ? `added ${fmtTs(goal.createdAt)}` : null;
           return (
             <div key={goal.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:10, background:"rgba(255,255,255,0.03)", border:`1px solid ${cat?.color || "#334155"}25` }}>
               <div style={{ width:10, height:10, borderRadius:"50%", background:cat?.color||"#475569", flexShrink:0 }} />
@@ -270,17 +278,16 @@ function ActivityGoalsSection({ activityGoals, categories, addActivityGoal, upda
                   {goal.reminderTime && <span>🔔 {goal.reminderTime}</span>}
                   <span>{(goal.days||[0,1,2,3,4,5,6]).map((d)=>DAYS_FULL[d]).join(", ")}</span>
                 </div>
+                {tsLabel && (
+                  <div style={{ fontSize:10, color:"#334155", marginTop:4, fontWeight:700 }}>{tsLabel}</div>
+                )}
               </div>
-              {/* Toggle enable */}
               <button
                 onClick={() => updateActivityGoal(goal.id, { enabled: !goal.enabled })}
                 title={goal.enabled ? "Disable" : "Enable"}
                 style={{ background:"transparent", border:"none", cursor:"pointer", padding:4, display:"flex", alignItems:"center" }}
               >
-                {goal.enabled
-                  ? <Bell size={14} color="#FCD34D" />
-                  : <BellOff size={14} color="#475569" />
-                }
+                {goal.enabled ? <Bell size={14} color="#FCD34D" /> : <BellOff size={14} color="#475569" />}
               </button>
               <button
                 onClick={() => { deleteActivityGoal(goal.id); showNotif("Goal removed", "info"); }}

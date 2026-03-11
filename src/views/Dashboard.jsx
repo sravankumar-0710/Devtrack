@@ -232,6 +232,10 @@ export function Dashboard({ entries, categories, projects, goals, activityGoals,
           {recentEntries.map((e) => {
             const cat  = categories.find((c) => c.id === e.categoryId);
             const proj = projects.find((p) => p.id === e.project);
+            const addedAt = e.createdAt ? (() => {
+              const d = new Date(e.createdAt);
+              return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+            })() : null;
             return (
               <div key={e.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 12px", borderRadius:8, background:"rgba(255,255,255,0.02)" }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:cat?.color||"#475569", flexShrink:0 }} />
@@ -241,7 +245,10 @@ export function Dashboard({ entries, categories, projects, goals, activityGoals,
                     {proj.name}
                   </span>
                 )}
-                <span style={{ fontSize:11, color:"#475569" }}>{e.date}</span>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:1 }}>
+                  <span style={{ fontSize:11, color:"#475569" }}>{e.date}</span>
+                  {addedAt && <span style={{ fontSize:10, color:"#334155", fontWeight:700 }}>{addedAt}</span>}
+                </div>
                 <span style={{ fontSize:12, fontWeight:700, color:"#fff", minWidth:50, textAlign:"right" }}>
                   {fmtDuration(e.duration)}
                 </span>

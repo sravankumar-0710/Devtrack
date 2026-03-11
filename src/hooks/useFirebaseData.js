@@ -96,13 +96,14 @@ export function useFirebaseData(uid) {
   };
 
   const addActivityGoal = (goal) => {
-    const updated = [...activityGoals, { ...goal, id: Date.now().toString() }];
+    const now = new Date().toISOString();
+    const updated = [...activityGoals, { ...goal, id: Date.now().toString(), createdAt: now, updatedAt: now }];
     setActivityGoals(updated);
     saveActivityGoals(updated);
   };
 
   const updateActivityGoal = (id, patch) => {
-    const updated = activityGoals.map((g) => g.id === id ? { ...g, ...patch } : g);
+    const updated = activityGoals.map((g) => g.id === id ? { ...g, ...patch, updatedAt: new Date().toISOString() } : g);
     setActivityGoals(updated);
     saveActivityGoals(updated);
   };

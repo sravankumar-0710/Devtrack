@@ -271,7 +271,7 @@ export function ReportsView({ entries, categories, projects }) {
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
             <thead>
               <tr>
-                {["Date","Category","Duration","Project","Notes"].map((h) => (
+                {["Date","Time","Category","Duration","Project","Notes"].map((h) => (
                   <th key={h} style={{ textAlign:"left", padding:"8px 12px", color:"#475569", fontWeight:700, fontSize:10, letterSpacing:"0.06em", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
                     {h}
                   </th>
@@ -288,6 +288,9 @@ export function ReportsView({ entries, categories, projects }) {
                   return (
                     <tr key={e.id} style={{ borderBottom:"1px solid rgba(255,255,255,0.03)" }}>
                       <td style={{ padding:"8px 12px", color:"#64748B" }}>{e.date}</td>
+                      <td style={{ padding:"8px 12px", color:"#334155", fontWeight:700, fontSize:11 }}>
+                        {e.createdAt ? (() => { const d = new Date(e.createdAt); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })() : "—"}
+                      </td>
                       <td style={{ padding:"8px 12px" }}>
                         <span style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <span style={{ width:6, height:6, borderRadius:"50%", background:cat?.color||"#475569", flexShrink:0 }} />

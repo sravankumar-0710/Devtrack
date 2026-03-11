@@ -353,21 +353,18 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((e) => {
                   const cat = categories.find((c) => c.id === e.categoryId);
+                  const addedAt = e.createdAt ? (() => {
+                    const d = new Date(e.createdAt);
+                    return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+                  })() : null;
                   return (
-                    <div
-                      key={e.id}
-                      style={{
-                        display:      "flex",
-                        alignItems:   "center",
-                        gap:          10,
-                        padding:      "8px 10px",
-                        borderRadius: 8,
-                        background:   "rgba(255,255,255,0.02)",
-                      }}
-                    >
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: cat?.color || "#475569", flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>{cat?.name}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{fmtDuration(e.duration)}</span>
+                    <div key={e.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:8, background:"rgba(255,255,255,0.02)" }}>
+                      <div style={{ width:8, height:8, borderRadius:"50%", background:cat?.color||"#475569", flexShrink:0 }} />
+                      <span style={{ fontSize:12, color:"#94A3B8", flex:1 }}>{cat?.name}</span>
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:1 }}>
+                        {addedAt && <span style={{ fontSize:10, color:"#334155", fontWeight:700 }}>{addedAt}</span>}
+                        <span style={{ fontSize:12, fontWeight:700, color:"#fff" }}>{fmtDuration(e.duration)}</span>
+                      </div>
                     </div>
                   );
                 })}
