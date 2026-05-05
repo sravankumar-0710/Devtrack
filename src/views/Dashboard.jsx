@@ -1,8 +1,7 @@
-import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+import { useState } from "react";
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Clock, Calendar, Flame, Zap } from "lucide-react";
+import { Clock, Calendar, Flame, Zap, Trash2 } from "lucide-react";
 import { Card }              from "../components/Card";
 import { StatCard }          from "../components/StatCard";
 import { GoalBar }           from "../components/GoalBar";
@@ -12,7 +11,7 @@ import {
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
 
-export function Dashboard({ entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak }) {
+export function Dashboard({ entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak, deleteEntry }) {
   const dailyData     = buildDailyChartData(entries);
   const catData       = buildCategoryData(entries, categories);
   const weekTrend     = buildMonthlyTrendData(entries);
@@ -229,34 +228,76 @@ export function Dashboard({ entries, categories, projects, goals, activityGoals,
           {recentEntries.length === 0 && (
             <span style={{ fontSize:12, color:"#475569" }}>No sessions yet — start tracking!</span>
           )}
-          {recentEntries.map((e) => {
-            const cat  = categories.find((c) => c.id === e.categoryId);
-            const proj = projects.find((p) => p.id === e.project);
-            const addedAt = e.createdAt ? (() => {
-              const d = new Date(e.createdAt);
-              return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-            })() : null;
-            return (
-              <div key={e.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 12px", borderRadius:8, background:"rgba(255,255,255,0.02)" }}>
-                <div style={{ width:8, height:8, borderRadius:"50%", background:cat?.color||"#475569", flexShrink:0 }} />
-                <span style={{ fontSize:12, color:"#94A3B8", flex:1 }}>{cat?.name || "Unknown"}</span>
-                {proj && (
-                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:`${proj.color}20`, color:proj.color, fontWeight:700 }}>
-                    {proj.name}
-                  </span>
-                )}
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:1 }}>
-                  <span style={{ fontSize:11, color:"#475569" }}>{e.date}</span>
-                  {addedAt && <span style={{ fontSize:10, color:"#334155", fontWeight:700 }}>{addedAt}</span>}
-                </div>
-                <span style={{ fontSize:12, fontWeight:700, color:"#fff", minWidth:50, textAlign:"right" }}>
-                  {fmtDuration(e.duration)}
-                </span>
-              </div>
-            );
-          })}
+          {recentEntries.map((e) => <SessionRow key={e.id} e={e} categories={categories} projects={projects} deleteEntry={deleteEntry} />)}
         </div>
       </Card>
+    </div>
+  );
+}
+
+function SessionRow({ e, categories, projects, deleteEntry }) {
+  const [hovered,   setHovered]   = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  const cat  = categories.find((c) => c.id === e.categoryId);
+  const proj = projects.find((p) => p.id === e.project);
+  const addedAt = e.createdAt ? (() => {
+    const d = new Date(e.createdAt);
+    return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  })() : null;
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setConfirming(false); }}
+      style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 12px", borderRadius:8, background: hovered ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)", transition:"background 0.15s" }}
+    >
+      <div style={{ width:8, height:8, borderRadius:"50%", background:cat?.color||"#475569", flexShrink:0 }} />
+      <span style={{ fontSize:12, color:"#94A3B8", flex:1 }}>{cat?.name || "Unknown"}</span>
+      {proj && (
+        <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:`${proj.color}20`, color:proj.color, fontWeight:700 }}>
+          {proj.name}
+        </span>
+      )}
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:1 }}>
+        <span style={{ fontSize:11, color:"#475569" }}>{e.date}</span>
+        {addedAt && <span style={{ fontSize:10, color:"#334155", fontWeight:700 }}>{addedAt}</span>}
+      </div>
+      <span style={{ fontSize:12, fontWeight:700, color:"#fff", minWidth:50, textAlign:"right" }}>
+        {fmtDuration(e.duration)}
+      </span>
+
+      {/* Delete button — appears on hover */}
+      {hovered && !confirming && (
+        <button
+          onClick={() => setConfirming(true)}
+          title="Delete session"
+          style={{ background:"transparent", border:"none", cursor:"pointer", color:"#475569", padding:"2px 4px", borderRadius:4, display:"flex", alignItems:"center", transition:"color 0.15s", flexShrink:0 }}
+          onMouseEnter={(e) => e.currentTarget.style.color="#FCA5A5"}
+          onMouseLeave={(e) => e.currentTarget.style.color="#475569"}
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
+
+      {/* Inline confirmation */}
+      {confirming && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+          <span style={{ fontSize:10, color:"#FCA5A5", fontWeight:700 }}>DELETE?</span>
+          <button
+            onClick={() => deleteEntry(e.id)}
+            style={{ fontSize:10, fontWeight:700, fontFamily:"inherit", padding:"2px 8px", borderRadius:4, border:"1px solid rgba(252,165,165,0.4)", background:"rgba(252,165,165,0.12)", color:"#FCA5A5", cursor:"pointer" }}
+          >
+            YES
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            style={{ fontSize:10, fontWeight:700, fontFamily:"inherit", padding:"2px 8px", borderRadius:4, border:"1px solid rgba(100,116,139,0.3)", background:"rgba(100,116,139,0.1)", color:"#64748B", cursor:"pointer" }}
+          >
+            NO
+          </button>
+        </div>
+      )}
     </div>
   );
 }
