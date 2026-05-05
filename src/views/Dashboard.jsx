@@ -1,4 +1,6 @@
 import { useState } from "react";
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Clock, Calendar, Flame, Zap, Trash2 } from "lucide-react";
