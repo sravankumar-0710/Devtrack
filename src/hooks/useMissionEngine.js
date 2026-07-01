@@ -68,6 +68,18 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {
   };
   const isDayComplete = (dayNum) => !!(engineState.completedDays || {})[dayNum];
 
+  // ── track-level actions (the 4 mini cards — Foundations/Web/DSA/Project — within a day) ──
+  const toggleTrackComplete = (dayNum, trackKey) => {
+    if (!dayNum || !trackKey) return;
+    const completedTracks = { ...(engineState.completedTracks || {}) };
+    const dayTracks = { ...(completedTracks[dayNum] || {}) };
+    dayTracks[trackKey] = !dayTracks[trackKey];
+    completedTracks[dayNum] = dayTracks;
+    persist({ ...engineState, completedTracks });
+  };
+  const isTrackComplete = (dayNum, trackKey) =>
+    !!(engineState.completedTracks || {})[dayNum]?.[trackKey];
+
   // ── logging ──────────────────────────────────────────────────────────────
   const addDSA           = (count) => persist(logDSA(engineState, count));
   const addGithubCommits = (count) => persist(logGithubCommits(engineState, count));
@@ -92,6 +104,8 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {
     markDayIncomplete,
     toggleDayComplete,
     isDayComplete,
+    toggleTrackComplete,
+    isTrackComplete,
     addDSA,
     addGithubCommits,
   };

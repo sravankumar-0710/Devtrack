@@ -185,6 +185,8 @@ export default function App() {
     markDayIncomplete: engine.markDayIncomplete,
     toggleDayComplete: engine.toggleDayComplete,
     isDayComplete:     engine.isDayComplete,
+    toggleTrackComplete: engine.toggleTrackComplete,
+    isTrackComplete:     engine.isTrackComplete,
     engineState:       engine.engineState,
   };
 
