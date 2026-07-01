@@ -54,6 +54,18 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {
     const completedDays = { ...(engineState.completedDays || {}), [dayNum]: new Date().toISOString() };
     persist({ ...engineState, completedDays });
   };
+  // Undo a day that was marked complete by mistake (e.g. fat-fingered the wrong day).
+  const markDayIncomplete = (dayNum) => {
+    if (!dayNum) return;
+    const completedDays = { ...(engineState.completedDays || {}) };
+    delete completedDays[dayNum];
+    persist({ ...engineState, completedDays });
+  };
+  // Toggle helper — handy for a single click target in list UIs.
+  const toggleDayComplete = (dayNum) => {
+    if (!dayNum) return;
+    isDayComplete(dayNum) ? markDayIncomplete(dayNum) : markDayComplete(dayNum);
+  };
   const isDayComplete = (dayNum) => !!(engineState.completedDays || {})[dayNum];
 
   // ── logging ──────────────────────────────────────────────────────────────
@@ -77,6 +89,8 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {
     markComplete,
     markIncomplete,
     markDayComplete,
+    markDayIncomplete,
+    toggleDayComplete,
     isDayComplete,
     addDSA,
     addGithubCommits,

@@ -37,6 +37,7 @@ import { WeeklyReviewView }   from "./views/WeeklyReviewView";
 import { StatisticsView }     from "./views/StatisticsView";
 import { DailyMissionView }   from "./views/DailyMissionView";
 import { DailyPlanView } from "./views/DailyPlanView";
+import { AllDaysView } from "./views/AllDaysView";
 import { useMissionEngine } from "./hooks/useMissionEngine";
 
 const VIEW_MAP = {
@@ -47,6 +48,7 @@ const VIEW_MAP = {
   settings:  SettingsView,
   // Project Consistency
   dailyPlan:      DailyPlanView,
+  allDays:        AllDaysView,
   dailyMission:   DailyMissionView,
   planner:        DailyPlannerView,
   goals:          GoalsView,
@@ -179,11 +181,11 @@ export default function App() {
     markIncomplete:   engine.markIncomplete,
     addDSA:           engine.addDSA,
     addGithubCommits: engine.addGithubCommits,
-    markDayComplete:  engine.markDayComplete,
-    isDayComplete:    engine.isDayComplete,
-    engineState:      engine.engineState,
-    markDayComplete: engine.markDayComplete,
-    isDayComplete:   engine.isDayComplete,
+    markDayComplete:   engine.markDayComplete,
+    markDayIncomplete: engine.markDayIncomplete,
+    toggleDayComplete: engine.toggleDayComplete,
+    isDayComplete:     engine.isDayComplete,
+    engineState:       engine.engineState,
   };
 
   return (

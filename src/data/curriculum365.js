@@ -390,6 +390,26 @@ export function getDayPlan(date = new Date()) {
 /** Return the plan entry for today. */
 export function getTodayPlan() { return getDayPlan(new Date()); }
 
+/** Given a 1-based day number, return its PLAN_365 entry (or null if out of range). */
+export function getPlanForDay(dayNum) {
+  if (!dayNum || dayNum < 1 || dayNum > PLAN_365.length) return null;
+  return PLAN_365[dayNum - 1];
+}
+
+/** Given a 1-based day number, return the calendar Date it falls on. */
+export function dateForDay(dayNum) {
+  const start = new Date(PLAN_START_DATE + "T00:00:00");
+  const d = new Date(start);
+  d.setDate(d.getDate() + (dayNum - 1));
+  return d;
+}
+
+/** The 1-based day number for "today" (may be <1 before start, or >365 after the plan ends). */
+export function todayDayNum() {
+  const start = new Date(PLAN_START_DATE + "T00:00:00");
+  return Math.floor((new Date() - start) / 86400000) + 1;
+}
+
 /** 0-based progress through the year (0.0 – 1.0). */
 export function yearProgress() {
   const start = new Date(PLAN_START_DATE + "T00:00:00");

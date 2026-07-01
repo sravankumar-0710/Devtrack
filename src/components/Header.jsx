@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   BarChart2, Clock, TrendingUp, Settings, LogOut,
   Target, Map, Award, Flame, StickyNote, Library, GraduationCap, ChevronDown,
-  CalendarDays, Code2, Brain, BarChart3, ClipboardCheck, Rocket,
+  CalendarDays, Code2, Brain, BarChart3, ClipboardCheck, Rocket, CalendarRange,
 } from "lucide-react";
 import { NAV_ITEMS, CONSISTENCY_NAV_ITEMS } from "../data/constants";
 import { fmtDuration } from "../utils/helpers";
@@ -11,6 +11,7 @@ const NAV_ICONS = { dashboard: BarChart2, timer: Clock, reports: TrendingUp, set
 
 const CONSISTENCY_ICONS = {
   dailyPlan: CalendarDays,
+  allDays: CalendarRange,
   dailyMission: Rocket,
   planner: CalendarDays, goals: Target, roadmap: Map, projects: Code2,
   certifications: Award, studySessions: Brain, resources: Library,
