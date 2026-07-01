@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Clock, Calendar, Flame, Zap, Trash2 } from "lucide-react";
+import { Clock, Calendar, Flame, Zap, Trash2, Compass, Pencil, Check } from "lucide-react";
 import { Card }              from "../components/Card";
 import { StatCard }          from "../components/StatCard";
 import { GoalBar }           from "../components/GoalBar";
@@ -13,7 +13,11 @@ import {
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
 
-export function Dashboard({ entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak, deleteEntry }) {
+export function Dashboard({
+  entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak, deleteEntry,
+  lifeGoals = [], roadmapItems = [], certifications = [],
+  mission, saveMission,
+}) {
   const dailyData     = buildDailyChartData(entries);
   const catData       = buildCategoryData(entries, categories);
   const weekTrend     = buildMonthlyTrendData(entries);
@@ -57,9 +61,32 @@ export function Dashboard({ entries, categories, projects, goals, activityGoals,
     );
   };
 
+  // ── Project Consistency derived values ──────────────────────────────────────
+  const currentCourse = roadmapItems.find((r) => r.status === "In Progress") || roadmapItems[0];
+  const nextCertification = certifications.find((c) => c.status !== "Completed");
+  const nextMilestone = [...lifeGoals]
+    .filter((g) => g.status !== "Completed" && g.deadline)
+    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0]
+    || lifeGoals.find((g) => g.status !== "Completed");
+  const currentProjectTracked = [...projects]
+    .map((p) => ({ ...p, seconds: entries.filter((e) => e.project === p.id).reduce((a, b) => a + b.duration, 0) }))
+    .sort((a, b) => b.seconds - a.seconds)[0];
+
   return (
     <div style={{ padding:28, maxWidth:1200, margin:"0 auto" }}>
 
+      {/* MISSION CONTROL — Project Consistency */}
+      <MissionControl
+        mission={mission}
+        saveMission={saveMission}
+        currentCourse={currentCourse}
+        currentProject={currentProjectTracked}
+        weeklyTargetSeconds={goals.weekly}
+        weekSeconds={weekSeconds}
+        streak={streak}
+        nextCertification={nextCertification}
+        nextMilestone={nextMilestone}
+      />
       {/* STAT CARDS */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:24 }}>
         {statCards.map((s) => <StatCard key={s.label} {...s} />)}
@@ -308,6 +335,91 @@ function SectionLabel({ children, style = {} }) {
   return (
     <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", color:"#64748B", marginBottom:12, ...style }}>
       {children}
+    </div>
+  );
+}
+
+// ─── MISSION CONTROL ──────────────────────────────────────────────────────────
+// Surfaces the "Project Consistency" dashboard fields: Mission, Today's Mission,
+// Current Course, Current Project, Weekly Target, Streak, Hours This Week,
+// Next Certification, Next Milestone, Quote.
+function MissionControl({
+  mission, saveMission, currentCourse, currentProject,
+  weeklyTargetSeconds, weekSeconds, streak, nextCertification, nextMilestone,
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(mission || { statement: "", quote: "" });
+
+  const handleSave = () => {
+    saveMission?.(draft);
+    setEditing(false);
+  };
+
+  const weeklyPct = weeklyTargetSeconds
+    ? Math.min(100, Math.round((weekSeconds / weeklyTargetSeconds) * 100))
+    : 0;
+
+  return (
+    <Card style={{ marginBottom: 24, background: "linear-gradient(135deg, rgba(110,231,183,0.06), rgba(59,130,246,0.04))" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Compass size={16} color="#6EE7B7" />
+          <SectionLabel style={{ marginBottom: 0 }}>MISSION</SectionLabel>
+        </div>
+        <button
+          onClick={() => editing ? handleSave() : setEditing(true)}
+          style={{ background: "transparent", border: "none", cursor: "pointer", color: "#475569", display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}
+        >
+          {editing ? <><Check size={12} /> Save</> : <><Pencil size={12} /> Edit</>}
+        </button>
+      </div>
+
+      {editing ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+          <input
+            value={draft.statement}
+            onChange={(e) => setDraft({ ...draft, statement: e.target.value })}
+            placeholder="Mission statement"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "8px 10px", fontSize: 13, color: "#fff", fontFamily: "inherit" }}
+          />
+          <input
+            value={draft.quote}
+            onChange={(e) => setDraft({ ...draft, quote: e.target.value })}
+            placeholder="Daily quote"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "8px 10px", fontSize: 12, color: "#94A3B8", fontFamily: "inherit" }}
+          />
+        </div>
+      ) : (
+        <>
+          <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>
+            {mission?.statement || "Become an AI / Software Engineer in ~1 year."}
+          </p>
+          <p style={{ fontSize: 12, color: "#64748B", fontStyle: "italic", margin: "0 0 18px" }}>
+            "{mission?.quote || "Consistency beats intensity."}"
+          </p>
+        </>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
+        <MissionTile label="TODAY'S MISSION" value={currentCourse ? `Study ${currentCourse.item}` : "Pick a focus for today"} />
+        <MissionTile label="CURRENT COURSE" value={currentCourse?.item || "Not set"} sub={currentCourse?.status} />
+        <MissionTile label="CURRENT PROJECT" value={currentProject?.name || "Not set"} />
+        <MissionTile label="WEEKLY TARGET" value={`${weeklyPct}%`} sub={`${fmtH(weekSeconds)} of ${fmtH(weeklyTargetSeconds)}`} />
+        <MissionTile label="CURRENT STREAK" value={`${streak}d`} />
+        <MissionTile label="HOURS THIS WEEK" value={fmtH(weekSeconds)} />
+        <MissionTile label="NEXT CERTIFICATION" value={nextCertification?.certificate || "None queued"} />
+        <MissionTile label="NEXT MILESTONE" value={nextMilestone?.goal || "None set"} sub={nextMilestone?.deadline} />
+      </div>
+    </Card>
+  );
+}
+
+function MissionTile({ label, value, sub }) {
+  return (
+    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px" }}>
+      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "#64748B", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{value}</div>
+      {sub && <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
