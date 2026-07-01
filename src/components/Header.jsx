@@ -1,8 +1,23 @@
-import { BarChart2, Clock, TrendingUp, Settings, LogOut } from "lucide-react";
-import { NAV_ITEMS } from "../data/constants";
+import { useState, useRef, useEffect } from "react";
+import {
+  BarChart2, Clock, TrendingUp, Settings, LogOut,
+  Target, Map, Award, Flame, StickyNote, Library, GraduationCap, ChevronDown,
+  CalendarDays, Code2, Brain, BarChart3, ClipboardCheck, Rocket, CalendarRange,
+} from "lucide-react";
+import { NAV_ITEMS, CONSISTENCY_NAV_ITEMS } from "../data/constants";
 import { fmtDuration } from "../utils/helpers";
 
 const NAV_ICONS = { dashboard: BarChart2, timer: Clock, reports: TrendingUp, settings: Settings };
+
+const CONSISTENCY_ICONS = {
+  dailyPlan: CalendarDays,
+  allDays: CalendarRange,
+  dailyMission: Rocket,
+  planner: CalendarDays, goals: Target, roadmap: Map, projects: Code2,
+  certifications: Award, studySessions: Brain, resources: Library,
+  notes: StickyNote, habits: Flame, statistics: BarChart3,
+  placement: GraduationCap, weeklyReview: ClipboardCheck,
+};
 
 /**
  * Header — sticky top navigation bar.
@@ -16,6 +31,18 @@ const NAV_ICONS = { dashboard: BarChart2, timer: Clock, reports: TrendingUp, set
  *   logout         {fn}
  */
 export function Header({ view, setView, streak, todaySeconds, user, logout }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const inConsistency = CONSISTENCY_NAV_ITEMS.some((i) => i.id === view);
+
+  useEffect(() => {
+    const close = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
   return (
     <header style={{
       padding:        "0 28px",
@@ -45,7 +72,7 @@ export function Header({ view, setView, streak, todaySeconds, user, logout }) {
       </div>
 
       {/* Nav */}
-      <nav style={{ display: "flex", gap: 4 }}>
+      <nav style={{ display: "flex", gap: 4, alignItems: "center" }}>
         {NAV_ITEMS.map(({ id, label }) => {
           const Icon   = NAV_ICONS[id];
           const active = view === id;
@@ -63,6 +90,49 @@ export function Header({ view, setView, streak, todaySeconds, user, logout }) {
             </button>
           );
         })}
+
+        {/* Consistency dropdown */}
+        <div ref={menuRef} style={{ position: "relative" }}>
+          <button onClick={() => setMenuOpen((o) => !o)} style={{
+            padding: "6px 14px", borderRadius: 6, border: "none",
+            cursor: "pointer", fontSize: 12, fontFamily: "inherit",
+            fontWeight: 600, letterSpacing: "0.04em",
+            background: inConsistency ? "rgba(196,181,253,0.15)" : "transparent",
+            color:      inConsistency ? "#C4B5FD" : "#94A3B8",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <Target size={13} /> Consistency <ChevronDown size={12} />
+          </button>
+
+          {menuOpen && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 6px)", right: 0,
+              background: "#10131C", border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 10, padding: 6, minWidth: 180, maxHeight: 360, overflowY: "auto",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)", zIndex: 200,
+            }}>
+              {CONSISTENCY_NAV_ITEMS.map(({ id, label }) => {
+                const Icon   = CONSISTENCY_ICONS[id];
+                const active = view === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => { setView(id); setMenuOpen(false); }}
+                    style={{
+                      width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: 6,
+                      border: "none", cursor: "pointer", fontSize: 12, fontFamily: "inherit",
+                      fontWeight: 600, display: "flex", alignItems: "center", gap: 8,
+                      background: active ? "rgba(196,181,253,0.12)" : "transparent",
+                      color:      active ? "#C4B5FD" : "#CBD5E1",
+                    }}
+                  >
+                    <Icon size={13} /> {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Right side — streak + today + user */}

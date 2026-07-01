@@ -32,3 +32,22 @@ export const NAV_ITEMS = [
   { id: "reports",   label: "Reports"   },
   { id: "settings",  label: "Settings"  },
 ];
+
+// "Project Consistency" feature set — life/career operating system
+export const CONSISTENCY_NAV_ITEMS = [
+  { id: "dailyPlan",      label: "Daily Plan" },
+  { id: "allDays",        label: "All Days" },
+  { id: "dailyMission",   label: "Daily Mission"  },
+  { id: "planner",        label: "Daily Planner"  },
+  { id: "goals",          label: "Goals"          },
+  { id: "roadmap",        label: "Roadmap"        },
+  { id: "projects",       label: "Projects"       },
+  { id: "certifications", label: "Certifications" },
+  { id: "studySessions",  label: "Study Sessions" },
+  { id: "resources",      label: "Resources"      },
+  { id: "notes",          label: "Notes"          },
+  { id: "habits",         label: "Habits"         },
+  { id: "statistics",     label: "Statistics"     },
+  { id: "placement",      label: "Placement"      },
+  { id: "weeklyReview",   label: "Weekly Review"  },
+];

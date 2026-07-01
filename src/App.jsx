@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 
 // Firebase
-import { useAuth }         from "./hooks/useAuth";
-import { useFirebaseData } from "./hooks/useFirebaseData";
+import { useAuth }            from "./hooks/useAuth";
+import { useFirebaseData }    from "./hooks/useFirebaseData";
+import { useConsistencyData } from "./hooks/useConsistencyData";
 
 // Utils
 import { calcStreak, today } from "./utils/helpers";
@@ -21,11 +22,46 @@ import { TimerView }    from "./views/TimerView";
 import { ReportsView }  from "./views/ReportsView";
 import { SettingsView } from "./views/SettingsView";
 
+// Project Consistency views
+import { GoalsView }          from "./views/GoalsView";
+import { RoadmapView }        from "./views/RoadmapView";
+import { CertificationsView } from "./views/CertificationsView";
+import { HabitsView }         from "./views/HabitsView";
+import { NotesView }          from "./views/NotesView";
+import { ResourcesView }      from "./views/ResourcesView";
+import { PlacementView }      from "./views/PlacementView";
+import { ProjectsView }       from "./views/ProjectsView";
+import { StudySessionsView }  from "./views/StudySessionsView";
+import { DailyPlannerView }   from "./views/DailyPlannerView";
+import { WeeklyReviewView }   from "./views/WeeklyReviewView";
+import { StatisticsView }     from "./views/StatisticsView";
+import { DailyMissionView }   from "./views/DailyMissionView";
+import { DailyPlanView } from "./views/DailyPlanView";
+import { AllDaysView } from "./views/AllDaysView";
+import { useMissionEngine } from "./hooks/useMissionEngine";
+
 const VIEW_MAP = {
+
   dashboard: Dashboard,
   timer:     TimerView,
   reports:   ReportsView,
   settings:  SettingsView,
+  // Project Consistency
+  dailyPlan:      DailyPlanView,
+  allDays:        AllDaysView,
+  dailyMission:   DailyMissionView,
+  planner:        DailyPlannerView,
+  goals:          GoalsView,
+  roadmap:        RoadmapView,
+  projects:       ProjectsView,
+  certifications: CertificationsView,
+  studySessions:  StudySessionsView,
+  resources:      ResourcesView,
+  notes:          NotesView,
+  habits:         HabitsView,
+  statistics:     StatisticsView,
+  placement:      PlacementView,
+  weeklyReview:   WeeklyReviewView,
 };
 
 export default function App() {
@@ -46,6 +82,14 @@ export default function App() {
     onRestore,
   } = useFirebaseData(user?.uid);
 
+  // ── Project Consistency data (Goals, Roadmap, Certifications, Habits, etc) ──
+  const {
+    lifeGoals, habits, certifications, notes, resources, roadmapItems, placementItems,
+    devProjects, studySessions, dailyTasks, weeklyReviews,
+    mission, synced: consistencySynced,
+    addItem, updateItem, deleteItem, saveMission,
+  } = useConsistencyData(user?.uid);
+  const engine = useMissionEngine(user?.uid);
   // ── Activity goal notifications ─────────────────────────────────────────────
   useActivityGoalNotifications(activityGoals, entries, categories);
 
@@ -94,7 +138,7 @@ export default function App() {
   }
 
   // ── Signed in but data not yet synced ───────────────────────────────────────
-  if (!synced) {
+  if (!synced || !consistencySynced) {
     return (
       <div style={{
         minHeight: "100vh", background: "#0A0A0F",
@@ -121,6 +165,27 @@ export default function App() {
     todaySeconds, weekSeconds, streak,
     showNotif,
     user, logout,
+    // Project Consistency
+    
+    lifeGoals, habits, certifications, notes, resources, roadmapItems, placementItems,
+    devProjects, studySessions, dailyTasks, weeklyReviews,
+    mission, saveMission,
+    addItem, updateItem, deleteItem,
+        // Mission Engine (365-day plan)
+    todayTopics:      engine.todayTopics,
+    revisionTopics:   engine.revisionTopics,
+    bonus:            engine.bonus,
+    readiness:        engine.readiness,
+    progress:         engine.progress,
+    markComplete:     engine.markComplete,
+    markIncomplete:   engine.markIncomplete,
+    addDSA:           engine.addDSA,
+    addGithubCommits: engine.addGithubCommits,
+    markDayComplete:   engine.markDayComplete,
+    markDayIncomplete: engine.markDayIncomplete,
+    toggleDayComplete: engine.toggleDayComplete,
+    isDayComplete:     engine.isDayComplete,
+    engineState:       engine.engineState,
   };
 
   return (
