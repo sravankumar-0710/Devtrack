@@ -22,6 +22,8 @@ export function Dashboard({
   // ADD THESE HERE
   markDayComplete,
   isDayComplete,
+  toggleTrackComplete,
+  isTrackComplete,
   engineState = {},
   readiness = null,
   progress = null,
@@ -88,6 +90,8 @@ export function Dashboard({
       <DailyPlanStrip
         markDayComplete={markDayComplete}
         isDayComplete={isDayComplete}
+        toggleTrackComplete={toggleTrackComplete}
+        isTrackComplete={isTrackComplete}
         engineState={engineState}
       />
       <ConsistencyProgressPanel
@@ -443,7 +447,7 @@ function MissionTile({ label, value, sub }) {
     </div>
   );
 }
-function DailyPlanStrip({ markDayComplete, isDayComplete, engineState }) {
+function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, isTrackComplete, engineState }) {
   const plan = getTodayPlan();
   const yp   = Math.round(yearProgress() * 100);
   const done = plan && isDayComplete ? isDayComplete(plan.day) : false;
@@ -452,10 +456,10 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, engineState }) {
   if (!plan) return null;
 
   const tracks = [
-    { icon: <BookOpen size={13} color="#93C5FD" />, label: "FOUNDATIONS", content: plan.t1, color: "#93C5FD", time: plan.dayType === "sunday" ? "90m" : "60m" },
-    { icon: <Code2    size={13} color="#6EE7B7" />, label: "WEB ROADMAP", content: plan.t2, color: "#6EE7B7", time: plan.dayType === "sunday" ? "75m" : "45m" },
-    { icon: <Brain    size={13} color="#FCD34D" />, label: "DSA PRACTICE", content: plan.t3, color: "#FCD34D", time: plan.dayType === "sunday" ? "75m" : "45m" },
-    { icon: <Wrench   size={13} color="#FB923C" />, label: "PROJECT TASK", content: plan.t4, color: "#FB923C", time: plan.dayType === "sunday" ? "60m" : "30m" },
+    { key: "t1", icon: <BookOpen size={13} color="#93C5FD" />, label: "FOUNDATIONS", content: plan.t1, color: "#93C5FD", time: plan.dayType === "sunday" ? "90m" : "60m" },
+    { key: "t2", icon: <Code2    size={13} color="#6EE7B7" />, label: "WEB ROADMAP", content: plan.t2, color: "#6EE7B7", time: plan.dayType === "sunday" ? "75m" : "45m" },
+    { key: "t3", icon: <Brain    size={13} color="#FCD34D" />, label: "DSA PRACTICE", content: plan.t3, color: "#FCD34D", time: plan.dayType === "sunday" ? "75m" : "45m" },
+    { key: "t4", icon: <Wrench   size={13} color="#FB923C" />, label: "PROJECT TASK", content: plan.t4, color: "#FB923C", time: plan.dayType === "sunday" ? "60m" : "30m" },
   ];
 
   const handleDone = () => {
@@ -517,18 +521,22 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, engineState }) {
       {/* 4 track cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {tracks.map((t) => (
-          <TrackMini key={t.label} {...t} />
+          <TrackMini
+            key={t.key}
+            {...t}
+            done={isTrackComplete ? isTrackComplete(plan.day, t.key) : false}
+            onToggle={() => toggleTrackComplete?.(plan.day, t.key)}
+          />
         ))}
       </div>
     </Card>
   );
 }
 
-function TrackMini({ icon, label, content, color, time }) {
-  const [done, setDone] = useState(false);
+function TrackMini({ icon, label, content, color, time, done, onToggle }) {
   return (
     <div
-      onClick={() => setDone((d) => !d)}
+      onClick={onToggle}
       style={{
         borderRadius: 8, padding: "10px 12px", cursor: "pointer",
         background: done ? `${color}0D` : "rgba(255,255,255,0.02)",
