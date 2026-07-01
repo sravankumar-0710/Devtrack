@@ -12,11 +12,21 @@ import {
   fmtDuration, fmtH, today,
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
-
+import { getTodayPlan, yearProgress, PLAN_365 } from "../data/curriculum365";
+import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy } from "lucide-react";
 export function Dashboard({
   entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak, deleteEntry,
   lifeGoals = [], roadmapItems = [], certifications = [],
   mission, saveMission,
+
+  // ADD THESE HERE
+  markDayComplete,
+  isDayComplete,
+  engineState = {},
+  readiness = null,
+  progress = null,
+  addDSA,
+  addGithubCommits,
 }) {
   const dailyData     = buildDailyChartData(entries);
   const catData       = buildCategoryData(entries, categories);
@@ -74,7 +84,17 @@ export function Dashboard({
 
   return (
     <div style={{ padding:28, maxWidth:1200, margin:"0 auto" }}>
-
+      
+      <DailyPlanStrip
+        markDayComplete={markDayComplete}
+        isDayComplete={isDayComplete}
+        engineState={engineState}
+      />
+      <ConsistencyProgressPanel
+        engineState={engineState}
+        readiness={readiness}
+        progress={progress}
+      />
       {/* MISSION CONTROL — Project Consistency */}
       <MissionControl
         mission={mission}
@@ -420,6 +440,238 @@ function MissionTile({ label, value, sub }) {
       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "#64748B", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{value}</div>
       {sub && <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+}
+function DailyPlanStrip({ markDayComplete, isDayComplete, engineState }) {
+  const plan = getTodayPlan();
+  const yp   = Math.round(yearProgress() * 100);
+  const done = plan && isDayComplete ? isDayComplete(plan.day) : false;
+  const [celebrate, setCelebrate] = useState(false);
+
+  if (!plan) return null;
+
+  const tracks = [
+    { icon: <BookOpen size={13} color="#93C5FD" />, label: "FOUNDATIONS", content: plan.t1, color: "#93C5FD", time: plan.dayType === "sunday" ? "90m" : "60m" },
+    { icon: <Code2    size={13} color="#6EE7B7" />, label: "WEB ROADMAP", content: plan.t2, color: "#6EE7B7", time: plan.dayType === "sunday" ? "75m" : "45m" },
+    { icon: <Brain    size={13} color="#FCD34D" />, label: "DSA PRACTICE", content: plan.t3, color: "#FCD34D", time: plan.dayType === "sunday" ? "75m" : "45m" },
+    { icon: <Wrench   size={13} color="#FB923C" />, label: "PROJECT TASK", content: plan.t4, color: "#FB923C", time: plan.dayType === "sunday" ? "60m" : "30m" },
+  ];
+
+  const handleDone = () => {
+    markDayComplete?.(plan.day);
+    setCelebrate(true);
+    setTimeout(() => setCelebrate(false), 2600);
+  };
+
+  return (
+    <Card style={{ marginBottom: 24, background: "linear-gradient(135deg, rgba(110,231,183,0.05), rgba(147,197,253,0.03))" }}>
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <CalendarDays size={15} color="#6EE7B7" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.06em" }}>
+            TODAY'S PLAN — DAY {plan.day} / 365
+          </span>
+          <span style={{
+            fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
+            background: plan.dayType === "sunday" ? "rgba(252,211,77,0.12)" : "rgba(147,197,253,0.1)",
+            color: plan.dayType === "sunday" ? "#FCD34D" : "#93C5FD",
+          }}>
+            {plan.dayType === "sunday" ? "DEEP WORK · 5h" : "STUDY DAY · 3h"}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Year progress bar */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 80, height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <div style={{ width: `${yp}%`, height: "100%", background: "#6EE7B7", borderRadius: 3, transition: "width 0.5s" }} />
+            </div>
+            <span style={{ fontSize: 10, color: "#6EE7B7", fontWeight: 700 }}>{yp}%</span>
+          </div>
+          {!done ? (
+            <button
+              onClick={handleDone}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                background: "rgba(110,231,183,0.1)", border: "1px solid rgba(110,231,183,0.3)",
+                color: "#6EE7B7", borderRadius: 8, padding: "6px 12px",
+                fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              <CheckCircle2 size={12} /> Mark Done
+            </button>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#6EE7B7", fontSize: 11, fontWeight: 700 }}>
+              <Trophy size={12} /> Day {plan.day} Complete
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stage name */}
+      <div style={{ fontSize: 11, color: "#475569", marginBottom: 12, fontStyle: "italic" }}>
+        {plan.stage}
+      </div>
+
+      {/* 4 track cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+        {tracks.map((t) => (
+          <TrackMini key={t.label} {...t} />
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function TrackMini({ icon, label, content, color, time }) {
+  const [done, setDone] = useState(false);
+  return (
+    <div
+      onClick={() => setDone((d) => !d)}
+      style={{
+        borderRadius: 8, padding: "10px 12px", cursor: "pointer",
+        background: done ? `${color}0D` : "rgba(255,255,255,0.02)",
+        border: `1px solid ${done ? color + "44" : "rgba(255,255,255,0.06)"}`,
+        transition: "all 0.15s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          {icon}
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#64748B", letterSpacing: "0.05em" }}>{label}</span>
+        </div>
+        {done
+          ? <CheckCircle2 size={13} color={color} />
+          : <Circle size={13} color="#334155" />}
+      </div>
+      <div style={{
+        fontSize: 11, color: done ? "#64748B" : "#CBD5E1", lineHeight: 1.4,
+        textDecoration: done ? "line-through" : "none", marginBottom: 6,
+      }}>
+        {content}
+      </div>
+      <span style={{ fontSize: 9, color, fontWeight: 700 }}>{time}</span>
+    </div>
+  );
+}
+function ConsistencyProgressPanel({ engineState = {}, readiness, progress }) {
+  const completedDays = Object.keys(engineState.completedDays || {}).length;
+  const dsaSolved     = Object.values(engineState.dsaSolved    || {}).reduce((a, b) => a + b, 0);
+  const githubCommits = Object.values(engineState.githubCommits|| {}).reduce((a, b) => a + b, 0);
+  const yp            = Math.round(yearProgress() * 100);
+
+  // This week — last 7 days, which are marked done
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dayNum = Math.floor((d - new Date("2026-07-01T00:00:00")) / 86400000) + 1;
+    const plan   = PLAN_365[dayNum - 1];
+    const done   = !!(engineState.completedDays || {})[dayNum];
+    days.push({ dayNum, date: d, done, label: d.toLocaleDateString(undefined, { weekday: "short" }) });
+  }
+
+  const TRACK_COLORS = {
+    fullstack: "#6EE7B7", dsa: "#FCD34D", coreCS: "#93C5FD", aiml: "#C4B5FD", placement: "#FB923C",
+  };
+  const TRACK_LABELS = {
+    fullstack: "Full Stack", dsa: "DSA", coreCS: "Core CS", aiml: "AI/ML", placement: "Placement",
+  };
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+
+      {/* Left — Stats + readiness */}
+      <Card>
+        <SectionLabel>CONSISTENCY PROGRESS</SectionLabel>
+
+        {/* Big stats row */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 }}>
+          <BigStat value={completedDays} label="DAYS DONE" sub="/ 365" color="#6EE7B7" />
+          <BigStat value={dsaSolved}     label="DSA SOLVED" sub="problems" color="#FCD34D" />
+          <BigStat value={githubCommits} label="COMMITS"    sub="total"    color="#93C5FD" />
+        </div>
+
+        {/* Per-track readiness bars */}
+        {readiness && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {Object.entries(TRACK_LABELS).map(([key, label]) => {
+              const pct = readiness.byTrack?.[key] || 0;
+              return (
+                <div key={key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                    <span style={{ fontSize: 10, color: "#64748B" }}>{label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: TRACK_COLORS[key] }}>{pct}%</span>
+                  </div>
+                  <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: TRACK_COLORS[key], borderRadius: 3, transition: "width 0.5s" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* Right — This week + upcoming */}
+      <Card>
+        <SectionLabel>THIS WEEK</SectionLabel>
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {days.map((d) => (
+            <div key={d.dayNum} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 9, color: "#475569", fontWeight: 700 }}>{d.label.toUpperCase()}</span>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: d.done ? "rgba(110,231,183,0.15)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${d.done ? "#6EE7B744" : "rgba(255,255,255,0.06)"}`,
+              }}>
+                {d.done
+                  ? <CheckCircle2 size={14} color="#6EE7B7" />
+                  : <span style={{ fontSize: 10, color: "#334155" }}>{d.date.getDate()}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <SectionLabel>NEXT 3 DAYS</SectionLabel>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[1, 2, 3].map((offset) => {
+            const d      = new Date(); d.setDate(d.getDate() + offset);
+            const dayNum = Math.floor((d - new Date("2026-07-01T00:00:00")) / 86400000) + 1;
+            const p      = PLAN_365[dayNum - 1];
+            if (!p) return null;
+            return (
+              <div key={offset} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "6px 10px",
+                borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
+              }}>
+                <span style={{ fontSize: 10, color: "#475569", minWidth: 28, fontWeight: 700 }}>+{offset}d</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {p.t2}
+                  </div>
+                  <div style={{ fontSize: 9, color: "#475569", marginTop: 1 }}>{p.t3}</div>
+                </div>
+                <span style={{ fontSize: 9, color: p.dayType === "sunday" ? "#FCD34D" : "#475569", fontWeight: 700, flexShrink: 0 }}>
+                  {p.dayType === "sunday" ? "5h" : "3h"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+    </div>
+  );
+}
+
+function BigStat({ value, label, sub, color }) {
+  return (
+    <div style={{ textAlign: "center", padding: "10px 0" }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
+      <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", letterSpacing: "0.06em", marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 9, color: "#334155", marginTop: 1 }}>{sub}</div>
     </div>
   );
 }

@@ -36,13 +36,17 @@ import { DailyPlannerView }   from "./views/DailyPlannerView";
 import { WeeklyReviewView }   from "./views/WeeklyReviewView";
 import { StatisticsView }     from "./views/StatisticsView";
 import { DailyMissionView }   from "./views/DailyMissionView";
+import { DailyPlanView } from "./views/DailyPlanView";
+import { useMissionEngine } from "./hooks/useMissionEngine";
 
 const VIEW_MAP = {
+
   dashboard: Dashboard,
   timer:     TimerView,
   reports:   ReportsView,
   settings:  SettingsView,
   // Project Consistency
+  dailyPlan:      DailyPlanView,
   dailyMission:   DailyMissionView,
   planner:        DailyPlannerView,
   goals:          GoalsView,
@@ -83,7 +87,7 @@ export default function App() {
     mission, synced: consistencySynced,
     addItem, updateItem, deleteItem, saveMission,
   } = useConsistencyData(user?.uid);
-
+  const engine = useMissionEngine(user?.uid);
   // ── Activity goal notifications ─────────────────────────────────────────────
   useActivityGoalNotifications(activityGoals, entries, categories);
 
@@ -160,10 +164,26 @@ export default function App() {
     showNotif,
     user, logout,
     // Project Consistency
+    
     lifeGoals, habits, certifications, notes, resources, roadmapItems, placementItems,
     devProjects, studySessions, dailyTasks, weeklyReviews,
     mission, saveMission,
     addItem, updateItem, deleteItem,
+        // Mission Engine (365-day plan)
+    todayTopics:      engine.todayTopics,
+    revisionTopics:   engine.revisionTopics,
+    bonus:            engine.bonus,
+    readiness:        engine.readiness,
+    progress:         engine.progress,
+    markComplete:     engine.markComplete,
+    markIncomplete:   engine.markIncomplete,
+    addDSA:           engine.addDSA,
+    addGithubCommits: engine.addGithubCommits,
+    markDayComplete:  engine.markDayComplete,
+    isDayComplete:    engine.isDayComplete,
+    engineState:      engine.engineState,
+    markDayComplete: engine.markDayComplete,
+    isDayComplete:   engine.isDayComplete,
   };
 
   return (

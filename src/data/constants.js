@@ -35,6 +35,7 @@ export const NAV_ITEMS = [
 
 // "Project Consistency" feature set — life/career operating system
 export const CONSISTENCY_NAV_ITEMS = [
+  { id: "dailyPlan",      label: "Daily Plan" },
   { id: "dailyMission",   label: "Daily Mission"  },
   { id: "planner",        label: "Daily Planner"  },
   { id: "goals",          label: "Goals"          },
