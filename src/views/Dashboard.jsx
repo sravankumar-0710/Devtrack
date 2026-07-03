@@ -12,7 +12,7 @@ import {
   fmtDuration, fmtH, today,
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
-import { getTodayPlan, yearProgress, PLAN_365 } from "../data/curriculum365";
+import { getTodayPlan, yearProgress, todayDayNum, PLAN_365 } from "../data/curriculum365";
 import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy } from "lucide-react";
 export function Dashboard({
   entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak, deleteEntry,
@@ -564,10 +564,16 @@ function TrackMini({ icon, label, content, color, time, done, onToggle }) {
   );
 }
 function ConsistencyProgressPanel({ engineState = {}, readiness, progress }) {
-  const completedDays = Object.keys(engineState.completedDays || {}).length;
+  const completedMap  = engineState.completedDays || {};
+  const completedDays = Object.keys(completedMap).length;
   const dsaSolved     = Object.values(engineState.dsaSolved    || {}).reduce((a, b) => a + b, 0);
   const githubCommits = Object.values(engineState.githubCommits|| {}).reduce((a, b) => a + b, 0);
   const yp            = Math.round(yearProgress() * 100);
+
+  // Missed days = plan days that are already in the past and were never marked done
+  const todayNum    = todayDayNum();
+  const missedDays  = PLAN_365.filter((d) => d.day < todayNum && !completedMap[d.day]);
+  const missedCount = missedDays.length;
 
   // This week — last 7 days, which are marked done
   const days = [];
@@ -594,11 +600,29 @@ function ConsistencyProgressPanel({ engineState = {}, readiness, progress }) {
         <SectionLabel>CONSISTENCY PROGRESS</SectionLabel>
 
         {/* Big stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
           <BigStat value={completedDays} label="DAYS DONE" sub="/ 365" color="#6EE7B7" />
+          <BigStat value={missedCount}   label="MISSED"    sub="days"     color="#FCA5A5" />
           <BigStat value={dsaSolved}     label="DSA SOLVED" sub="problems" color="#FCD34D" />
           <BigStat value={githubCommits} label="COMMITS"    sub="total"    color="#93C5FD" />
         </div>
+
+        {/* Missed days callout */}
+        {missedCount > 0 && (
+          <div style={{
+            display: "flex", flexDirection: "column", gap: 6,
+            padding: "10px 12px", marginBottom: 16, borderRadius: 8,
+            background: "rgba(252,165,165,0.08)", border: "1px solid rgba(252,165,165,0.25)",
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#FCA5A5" }}>
+              ⚠ {missedCount} missed day{missedCount > 1 ? "s" : ""} — go catch up
+            </span>
+            <span style={{ fontSize: 10, color: "#94A3B8" }}>
+              {missedDays.slice(0, 5).map((d) => `Day ${d.day}`).join(", ")}
+              {missedDays.length > 5 ? `, +${missedDays.length - 5} more` : ""}
+            </span>
+          </div>
+        )}
 
         {/* Per-track readiness bars */}
         {readiness && (
