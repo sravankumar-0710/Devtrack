@@ -1,9 +1,14 @@
-import { useState, useRef } from "react";
-import { Play, Square, Edit3, SkipForward, RefreshCw, Plus, X, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { Play, Pause, Square, Edit3, SkipForward, RefreshCw, Plus, X, Check, PictureInPicture2, Settings2 } from "lucide-react";
 import { Card }              from "../components/Card";
 import { ManualEntryModal }  from "../components/ManualEntryModal";
+import { FloatingTimer }     from "../components/FloatingTimer";
+import { FloatingPomodoro }  from "../components/FloatingPomodoro";
 import { useTimer }          from "../hooks/useTimer";
 import { usePomodoro }       from "../hooks/usePomodoro";
+import { useDocumentPiP }    from "../hooks/useDocumentPiP";
+import { playAlarm }         from "../utils/sound";
 import { fmt, fmtDuration, today }  from "../utils/helpers";
 
 /**
@@ -28,8 +33,16 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
     showNotif(`"${newCatName.trim()}" added!`);
   };
 
+  const [showPomoSettings, setShowPomoSettings] = useState(false);
+
   const timer    = useTimer();
-  const pomodoro = usePomodoro();
+  const pomodoro = usePomodoro(undefined, (newPhase) => {
+    playAlarm();
+    const msg = newPhase === "work" ? "Break's over — back to focus!" : "Focus session done — take a break!";
+    showNotif?.(msg);
+  });
+  const phaseColors = { work: "#FCA5A5", shortBreak: "#6EE7B7", longBreak: "#93C5FD" };
+  const phaseLabels = { work: "FOCUS", shortBreak: "SHORT BREAK", longBreak: "LONG BREAK" };
 
   // ── stopwatch handlers ──────────────────────────────────────────────────────
   const handleStart = () => {
@@ -43,7 +56,76 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
   const handleStop = () => {
     const result = timer.stop();
     if (result && result.duration > 0) setPendingResult(result);
+    stopwatchPip.close();
   };
+
+  // ── pop-out floating timer ──────────────────────────────────────────────────
+  const stopwatchPip = useDocumentPiP();
+  const currentCategoryLabel = categories.find((c) => c.id === timer.sessionMeta.categoryId)?.name;
+
+  const handlePopOut = async () => {
+    const win = await stopwatchPip.open({ width: 260, height: 160 });
+    if (!win) {
+      showNotif("Enable pop-ups for DevTrack to use the floating timer", "error");
+      return;
+    }
+    let mountEl = win.document.getElementById("pip-root");
+    if (!mountEl) {
+      mountEl = win.document.createElement("div");
+      mountEl.id = "pip-root";
+      mountEl.style.height = "100vh";
+      win.document.body.appendChild(mountEl);
+    }
+    if (!stopwatchPip.rootRef.current) stopwatchPip.rootRef.current = createRoot(mountEl);
+  };
+
+  // Keep the floating window's contents in sync with the live timer
+  useEffect(() => {
+    if (!stopwatchPip.pipWindow || !stopwatchPip.rootRef.current) return;
+    stopwatchPip.rootRef.current.render(
+      <FloatingTimer
+        elapsedLabel={fmt(timer.elapsed)}
+        isRunning={timer.isRunning}
+        categoryLabel={currentCategoryLabel}
+        onStop={() => { handleStop(); }}
+        onReturn={() => stopwatchPip.close()}
+      />
+    );
+  }, [timer.elapsed, timer.isRunning, currentCategoryLabel, stopwatchPip.pipWindow]);
+
+  // ── pop-out floating pomodoro ───────────────────────────────────────────────
+  const pomodoroPip = useDocumentPiP();
+
+  const handlePopOutPomodoro = async () => {
+    const win = await pomodoroPip.open({ width: 240, height: 180 });
+    if (!win) {
+      showNotif("Enable pop-ups for DevTrack to use the floating timer", "error");
+      return;
+    }
+    let mountEl = win.document.getElementById("pip-root");
+    if (!mountEl) {
+      mountEl = win.document.createElement("div");
+      mountEl.id = "pip-root";
+      mountEl.style.height = "100vh";
+      win.document.body.appendChild(mountEl);
+    }
+    if (!pomodoroPip.rootRef.current) pomodoroPip.rootRef.current = createRoot(mountEl);
+  };
+
+  useEffect(() => {
+    if (!pomodoroPip.pipWindow || !pomodoroPip.rootRef.current) return;
+    pomodoroPip.rootRef.current.render(
+      <FloatingPomodoro
+        timeLabel={fmt(pomodoro.timeLeft)}
+        phaseLabel={phaseLabels[pomodoro.phase]}
+        phaseColor={phaseColors[pomodoro.phase]}
+        isRunning={pomodoro.isRunning}
+        onToggle={() => (pomodoro.isRunning ? pomodoro.pause() : pomodoro.start())}
+        onSkip={pomodoro.skip}
+        onReturn={() => pomodoroPip.close()}
+      />
+    );
+  }, [pomodoro.timeLeft, pomodoro.isRunning, pomodoro.phase, pomodoroPip.pipWindow]);
 
   const handleConfirm = () => {
     if (!pendingResult) return;
@@ -52,9 +134,6 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
   };
 
   const todayTotal = entries.filter((e) => e.date === today()).reduce((a, b) => a + b.duration, 0);
-
-  const phaseColors = { work: "#FCA5A5", shortBreak: "#6EE7B7", longBreak: "#93C5FD" };
-  const phaseLabels = { work: "FOCUS", shortBreak: "SHORT BREAK", longBreak: "LONG BREAK" };
 
   return (
     <div style={{ padding: 28, maxWidth: 900, margin: "0 auto" }}>
@@ -232,9 +311,23 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
                   <Play size={18} fill="#000" /> START
                 </ActionBtn>
               ) : (
-                <ActionBtn color="#FCA5A5" onClick={handleStop}>
-                  <Square size={16} fill="#000" /> STOP
-                </ActionBtn>
+                <>
+                  <ActionBtn color="#FCA5A5" onClick={handleStop}>
+                    <Square size={16} fill="#000" /> STOP
+                  </ActionBtn>
+                  <button
+                    onClick={handlePopOut}
+                    title="Pop out into a floating window"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "0 20px", height: 48, borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.12)", background: "transparent",
+                      color: "#94A3B8", fontWeight: 700, fontSize: 13, cursor: "pointer",
+                    }}
+                  >
+                    <PictureInPicture2 size={16} /> POP OUT
+                  </button>
+                </>
               )}
             </div>
 
@@ -286,7 +379,58 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
           </Card>
         ) : (
           /* POMODORO */
-          <Card style={{ textAlign: "center", padding: 40 }}>
+          <Card style={{ textAlign: "center", padding: 40, position: "relative" }}>
+            <button
+              onClick={() => setShowPomoSettings((s) => !s)}
+              title="Change focus/break durations"
+              style={{
+                position: "absolute", top: 16, right: 16,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 32, height: 32, borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: showPomoSettings ? "rgba(110,231,183,0.12)" : "transparent",
+                color: showPomoSettings ? "#6EE7B7" : "#64748B", cursor: "pointer",
+              }}
+            >
+              <Settings2 size={15} />
+            </button>
+
+            {showPomoSettings && (
+              <div style={{
+                display: "flex", gap: 16, justifyContent: "center", marginBottom: 28,
+                padding: "14px 16px", borderRadius: 10,
+                background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+              }}>
+                {[
+                  { key: "work",       label: "FOCUS" },
+                  { key: "shortBreak", label: "SHORT BREAK" },
+                  { key: "longBreak",  label: "LONG BREAK" },
+                ].map(({ key, label }) => (
+                  <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 9, color: "#64748B", fontWeight: 700, letterSpacing: "0.05em" }}>{label}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={180}
+                      disabled={pomodoro.isRunning}
+                      value={Math.round(pomodoro.settings[key] / 60)}
+                      onChange={(e) => {
+                        const mins = Math.max(1, Number(e.target.value) || 1);
+                        pomodoro.updateSettings({ [key]: mins * 60 });
+                      }}
+                      style={{
+                        width: 56, textAlign: "center", padding: "6px 4px",
+                        borderRadius: 6, border: "1px solid rgba(255,255,255,0.12)",
+                        background: "rgba(255,255,255,0.04)", color: "#fff",
+                        fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+                      }}
+                    />
+                    <span style={{ fontSize: 9, color: "#334155" }}>min</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div style={{ fontSize: 10, color: "#64748B", letterSpacing: "0.08em", marginBottom: 8, fontWeight: 700 }}>
               {phaseLabels[pomodoro.phase]}
             </div>
@@ -297,26 +441,38 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
                 color:       phaseColors[pomodoro.phase],
                 letterSpacing: "-0.02em",
                 lineHeight:  1,
-                marginBottom: 32,
+                marginBottom: 20,
                 fontVariantNumeric: "tabular-nums",
               }}
             >
               {fmt(pomodoro.timeLeft)}
             </div>
 
-            {/* Progress ring (simplified) */}
+            {/* Cycle progress — 4 focus sessions per long break */}
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 12 }}>
+              {(() => {
+                const filled = pomodoro.sessionCount === 0 ? 0 : ((pomodoro.sessionCount - 1) % 4) + 1;
+                return [0, 1, 2, 3].map((i) => (
+                  <div key={i} style={{
+                    width: 8, height: 8, borderRadius: "50%",
+                    background: i < filled ? "#6EE7B7" : "rgba(255,255,255,0.08)",
+                  }} />
+                ));
+              })()}
+            </div>
+
             <div style={{ fontSize: 12, color: "#64748B", marginBottom: 24 }}>
               Sessions completed: <strong style={{ color: "#fff" }}>{pomodoro.sessionCount}</strong>
             </div>
 
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
               {!pomodoro.isRunning ? (
                 <ActionBtn color={phaseColors[pomodoro.phase]} onClick={pomodoro.start}>
                   <Play size={18} fill="#000" /> START
                 </ActionBtn>
               ) : (
                 <ActionBtn color="#FCD34D" onClick={pomodoro.pause}>
-                  ⏸ PAUSE
+                  <Pause size={16} fill="#000" /> PAUSE
                 </ActionBtn>
               )}
               <ActionBtn color="#475569" onClick={pomodoro.skip} small>
@@ -325,6 +481,18 @@ export function TimerView({ entries, categories, projects, addEntry, addCategory
               <ActionBtn color="#475569" onClick={pomodoro.reset} small>
                 <RefreshCw size={14} /> RESET
               </ActionBtn>
+              <button
+                onClick={handlePopOutPomodoro}
+                title="Pop out into a floating window"
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "0 16px", height: 40, borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,0.12)", background: "transparent",
+                  color: "#94A3B8", fontWeight: 700, fontSize: 11, cursor: "pointer",
+                }}
+              >
+                <PictureInPicture2 size={14} /> POP OUT
+              </button>
             </div>
           </Card>
         )}

@@ -179,6 +179,8 @@ export default function App() {
     progress:         engine.progress,
     markComplete:     engine.markComplete,
     markIncomplete:   engine.markIncomplete,
+    isTopicComplete:  engine.isTopicComplete,
+    toggleTopicComplete: engine.toggleTopicComplete,
     addDSA:           engine.addDSA,
     addGithubCommits: engine.addGithubCommits,
     markDayComplete:   engine.markDayComplete,

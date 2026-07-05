@@ -32,7 +32,7 @@ export function DailyMissionView({
   // Project Consistency v1 engine (from useMissionEngine)
   todayTopics = [], revisionTopics = [], bonus = null,
   readiness = null, progress = null,
-  markComplete, markIncomplete, addDSA, addGithubCommits,
+  markComplete, markIncomplete, isTopicComplete, addDSA, addGithubCommits,
 }) {
   const todayStr = today();
   const todayTasks = useMemo(
@@ -216,9 +216,17 @@ export function DailyMissionView({
               No curriculum loaded yet, or you're caught up — nothing left to assign today.
             </div>
           )}
-          {todayTopics.map((t) => (
-            <CurriculumTopicBlock key={t.id} topic={t} done={false} onToggle={() => markComplete?.(t.id)} />
-          ))}
+          {todayTopics.map((t) => {
+            const done = isTopicComplete ? isTopicComplete(t.id) : false;
+            return (
+              <CurriculumTopicBlock
+                key={t.id}
+                topic={t}
+                done={done}
+                onToggle={() => (done ? markIncomplete?.(t.id) : markComplete?.(t.id))}
+              />
+            );
+          })}
         </div>
 
         {revisionTopics.length > 0 && (
@@ -474,19 +482,31 @@ function Confetti() {
   );
 }
 
-function CurriculumTopicBlock({ topic, onToggle }) {
+function CurriculumTopicBlock({ topic, done, onToggle }) {
   return (
     <div style={{
-      borderRadius: 10, padding: "12px 14px", background: "rgba(255,255,255,0.02)",
-      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: 10, padding: "12px 14px",
+      background: done ? "rgba(110,231,183,0.05)" : "rgba(255,255,255,0.02)",
+      border: done ? "1px solid rgba(110,231,183,0.25)" : "1px solid rgba(255,255,255,0.06)",
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <BookOpen size={14} color="#C4B5FD" />
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{topic.concept}</span>
+          <button
+            onClick={onToggle}
+            title={done ? "Mark this topic incomplete" : "Mark this topic complete"}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+          >
+            {done ? <CheckCircle2 size={16} color="#6EE7B7" /> : <Circle size={16} color="#475569" />}
+          </button>
+          <span style={{
+            fontSize: 13, fontWeight: 700, color: done ? "#64748B" : "#fff",
+            textDecoration: done ? "line-through" : "none",
+          }}>
+            {topic.concept}
+          </span>
         </div>
-        <button onClick={onToggle} style={pillBtn("#6EE7B7")}>
-          <CheckCircle2 size={12} /> Done
+        <button onClick={onToggle} style={pillBtn(done ? "#FB923C" : "#6EE7B7")}>
+          {done ? <><Circle size={12} /> Undo</> : <><CheckCircle2 size={12} /> Done</>}
         </button>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 11 }}>

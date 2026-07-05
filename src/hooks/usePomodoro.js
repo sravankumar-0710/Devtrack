@@ -4,41 +4,47 @@ import { POMODORO_SETTINGS } from "../data/constants";
 /**
  * usePomodoro — Pomodoro timer (work / short break / long break cycles).
  *
+ * @param {object}   initialSettings  { work, shortBreak, longBreak } in seconds
+ * @param {function} onPhaseComplete  called with the new phase name whenever
+ *                                    a phase finishes (used to fire an alarm)
+ *
  * Returns:
- *   timeLeft      {number}   seconds remaining in current phase
- *   phase         {string}   "work" | "shortBreak" | "longBreak"
- *   isRunning     {boolean}
- *   sessionCount  {number}   completed work sessions
- *   start()       {fn}
- *   pause()       {fn}
- *   skip()        {fn}       move to next phase
- *   reset()       {fn}       reset to work phase
+ *   timeLeft        {number}   seconds remaining in current phase
+ *   phase           {string}   "work" | "shortBreak" | "longBreak"
+ *   isRunning       {boolean}
+ *   sessionCount    {number}   completed work sessions
+ *   settings        {object}   current durations in seconds
+ *   start()         {fn}
+ *   pause()         {fn}
+ *   skip()          {fn}       move to next phase
+ *   reset()         {fn}       reset to work phase
+ *   updateSettings(partial)  {fn}  change durations (e.g. { work: 1500 })
  */
-export function usePomodoro(settings = POMODORO_SETTINGS) {
+export function usePomodoro(initialSettings = POMODORO_SETTINGS, onPhaseComplete) {
+  const [settings,     setSettings]     = useState(initialSettings);
   const [phase,        setPhase]        = useState("work");
-  const [timeLeft,     setTimeLeft]     = useState(settings.work);
+  const [timeLeft,     setTimeLeft]     = useState(initialSettings.work);
   const [isRunning,    setIsRunning]    = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
 
   const intervalRef = useRef(null);
+  const onPhaseCompleteRef = useRef(onPhaseComplete);
+  onPhaseCompleteRef.current = onPhaseComplete;
 
   const nextPhase = useCallback((currentPhase, count) => {
+    let newPhase;
     if (currentPhase === "work") {
       const newCount = count + 1;
       setSessionCount(newCount);
-      if (newCount % 4 === 0) {
-        setPhase("longBreak");
-        setTimeLeft(settings.longBreak);
-      } else {
-        setPhase("shortBreak");
-        setTimeLeft(settings.shortBreak);
-      }
+      newPhase = newCount % 4 === 0 ? "longBreak" : "shortBreak";
     } else {
-      setPhase("work");
-      setTimeLeft(settings.work);
+      newPhase = "work";
     }
+    setPhase(newPhase);
+    setTimeLeft(settings[newPhase]);
     setIsRunning(false);
     clearInterval(intervalRef.current);
+    onPhaseCompleteRef.current?.(newPhase);
   }, [settings]);
 
   useEffect(() => {
@@ -66,5 +72,15 @@ export function usePomodoro(settings = POMODORO_SETTINGS) {
     setSessionCount(0);
   };
 
-  return { timeLeft, phase, isRunning, sessionCount, start, pause, skip, reset };
+  // Change focus/break durations. If nothing is running, also snaps the
+  // current phase's remaining time to the new value right away.
+  const updateSettings = (partial) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...partial };
+      if (!isRunning) setTimeLeft(next[phase]);
+      return next;
+    });
+  };
+
+  return { timeLeft, phase, isRunning, sessionCount, settings, start, pause, skip, reset, updateSettings };
 }

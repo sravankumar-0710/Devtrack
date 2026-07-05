@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -12,8 +12,8 @@ import {
   fmtDuration, fmtH, today,
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
-import { getTodayPlan, yearProgress, todayDayNum, PLAN_365 } from "../data/curriculum365";
-import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy } from "lucide-react";
+import { getTodayPlan, yearProgress, todayDayNum, PLAN_365, dateForDay } from "../data/curriculum365";
+import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy, ClipboardList, Search, X } from "lucide-react";
 export function Dashboard({
   entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak, deleteEntry,
   lifeGoals = [], roadmapItems = [], certifications = [],
@@ -98,6 +98,11 @@ export function Dashboard({
         engineState={engineState}
         readiness={readiness}
         progress={progress}
+      />
+      <TaskClipboard
+        engineState={engineState}
+        isTrackComplete={isTrackComplete}
+        toggleTrackComplete={toggleTrackComplete}
       />
       {/* MISSION CONTROL — Project Consistency */}
       <MissionControl
@@ -563,6 +568,210 @@ function TrackMini({ icon, label, content, color, time, done, onToggle }) {
     </div>
   );
 }
+// ─── TASK CLIPBOARD — missed & upcoming individual tasks, filterable by type ──
+
+const CLIPBOARD_TRACKS = [
+  { key: "t1", label: "Foundations", icon: <BookOpen size={11} />, color: "#93C5FD" },
+  { key: "t2", label: "Web Roadmap", icon: <Code2    size={11} />, color: "#6EE7B7" },
+  { key: "t3", label: "DSA",         icon: <Brain    size={11} />, color: "#FCD34D" },
+  { key: "t4", label: "Project",     icon: <Wrench   size={11} />, color: "#FB923C" },
+];
+const UPCOMING_WINDOW_DAYS = 14;
+const PAGE_SIZE = 25;
+
+function TaskClipboard({ engineState = {}, isTrackComplete, toggleTrackComplete }) {
+  const todayNum = todayDayNum();
+  const [tab, setTab] = useState("missed"); // missed | upcoming
+  const [typeFilter, setTypeFilter] = useState(() => new Set(CLIPBOARD_TRACKS.map((t) => t.key)));
+  const [query, setQuery] = useState("");
+  const [limit, setLimit] = useState(PAGE_SIZE);
+
+  const done = (day, key) => (isTrackComplete ? isTrackComplete(day, key) : false);
+
+  // Build the full flat list of individual tasks (day + track) once per render.
+  const allTasks = useMemoTasks(todayNum);
+
+  const q = query.trim().toLowerCase();
+
+  const filtered = allTasks.filter((task) => {
+    if (tab === "missed" && !(task.day < todayNum && !done(task.day, task.key))) return false;
+    if (tab === "upcoming" && !(task.day >= todayNum && task.day < todayNum + UPCOMING_WINDOW_DAYS && !done(task.day, task.key))) return false;
+    if (!typeFilter.has(task.key)) return false;
+    if (q && !task.content.toLowerCase().includes(q) && !String(task.day).includes(q)) return false;
+    return true;
+  });
+
+  const visible = filtered.slice(0, limit);
+  const missedTotal = allTasks.filter((t) => t.day < todayNum && !done(t.day, t.key)).length;
+  const upcomingTotal = allTasks.filter((t) => t.day >= todayNum && t.day < todayNum + UPCOMING_WINDOW_DAYS && !done(t.day, t.key)).length;
+
+  const toggleType = (key) => {
+    setTypeFilter((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next.size ? next : prev; // keep at least one type selected
+    });
+    setLimit(PAGE_SIZE);
+  };
+
+  return (
+    <Card style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <ClipboardList size={15} color="#C4B5FD" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.06em" }}>TASK CLIPBOARD</span>
+        </div>
+
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => { setTab("missed"); setLimit(PAGE_SIZE); }} style={clipTabBtn(tab === "missed", "#FCA5A5")}>
+            Missed ({missedTotal})
+          </button>
+          <button onClick={() => { setTab("upcoming"); setLimit(PAGE_SIZE); }} style={clipTabBtn(tab === "upcoming", "#93C5FD")}>
+            Upcoming ({upcomingTotal})
+          </button>
+        </div>
+      </div>
+
+      {/* Search + type filter pills */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6, flex: "1 1 180px",
+          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 8, padding: "6px 10px",
+        }}>
+          <Search size={12} color="#64748B" />
+          <input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setLimit(PAGE_SIZE); }}
+            placeholder="Search a task or day…"
+            style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E2E8F0", fontSize: 12, fontFamily: "inherit" }}
+          />
+          {query && (
+            <button onClick={() => setQuery("")} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", display: "flex" }}>
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {CLIPBOARD_TRACKS.map((t) => {
+            const active = typeFilter.has(t.key);
+            return (
+              <button key={t.key} onClick={() => toggleType(t.key)} style={clipTypePill(active, t.color)}>
+                {t.icon} {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Task list */}
+      <div style={{ maxHeight: 360, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, paddingRight: 4 }}>
+        {visible.length === 0 && (
+          <div style={{ fontSize: 12, color: "#475569", padding: "16px 4px", textAlign: "center" }}>
+            {tab === "missed" ? "No missed tasks matching this filter — nice." : "No upcoming tasks matching this filter."}
+          </div>
+        )}
+        {visible.map((task) => (
+          <ClipboardTaskRow
+            key={`${task.day}-${task.key}`}
+            task={task}
+            done={done(task.day, task.key)}
+            onToggle={() => toggleTrackComplete?.(task.day, task.key)}
+          />
+        ))}
+      </div>
+
+      {filtered.length > limit && (
+        <button
+          onClick={() => setLimit((l) => l + PAGE_SIZE)}
+          style={{ ...pillBtn("#C4B5FD"), marginTop: 10, width: "100%", justifyContent: "center" }}
+        >
+          Show {Math.min(PAGE_SIZE, filtered.length - limit)} more
+        </button>
+      )}
+    </Card>
+  );
+}
+
+// Builds the flat { day, key, type, content, date }[] list once per todayNum.
+function useMemoTasks(todayNum) {
+  return useMemo(() => {
+    const tasks = [];
+    PLAN_365.forEach((d) => {
+      CLIPBOARD_TRACKS.forEach((t) => {
+        tasks.push({ day: d.day, key: t.key, type: t.label, color: t.color, icon: t.icon, content: d[t.key], stage: d.stage });
+      });
+    });
+    return tasks;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayNum]);
+}
+
+function ClipboardTaskRow({ task, done, onToggle }) {
+  const date = dateForDay(task.day);
+  const dateLabel = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return (
+    <div
+      onClick={onToggle}
+      title={done ? "Mark this task incomplete" : "Mark this task complete"}
+      style={{
+        display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer",
+        padding: "8px 10px", borderRadius: 8,
+        background: done ? "rgba(110,231,183,0.05)" : "rgba(255,255,255,0.02)",
+        border: done ? "1px solid rgba(110,231,183,0.2)" : "1px solid rgba(255,255,255,0.05)",
+      }}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle?.(); }}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 1, display: "flex", flexShrink: 0 }}
+      >
+        {done ? <CheckCircle2 size={15} color="#6EE7B7" /> : <Circle size={15} color="#475569" />}
+      </button>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#64748B" }}>Day {task.day}</span>
+          <span style={{ fontSize: 10, color: "#475569" }}>{dateLabel}</span>
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: task.color, background: `${task.color}1A`,
+            padding: "1px 6px", borderRadius: 4, letterSpacing: "0.04em",
+          }}>
+            {task.type.toUpperCase()}
+          </span>
+        </div>
+        <div style={{
+          fontSize: 12, color: done ? "#64748B" : "#CBD5E1", lineHeight: 1.4,
+          textDecoration: done ? "line-through" : "none",
+        }}>
+          {task.content}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const pillBtn = (color) => ({
+  display: "flex", alignItems: "center", gap: 6,
+  background: `${color}1A`, border: `1px solid ${color}55`,
+  color, borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 700,
+  cursor: "pointer", fontFamily: "inherit",
+});
+
+const clipTabBtn = (active, color) => ({
+  background: active ? `${color}1A` : "rgba(255,255,255,0.03)",
+  border: active ? `1px solid ${color}55` : "1px solid rgba(255,255,255,0.08)",
+  color: active ? color : "#94A3B8",
+  borderRadius: 8, padding: "7px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+});
+
+const clipTypePill = (active, color) => ({
+  display: "flex", alignItems: "center", gap: 5,
+  background: active ? `${color}1A` : "rgba(255,255,255,0.03)",
+  border: active ? `1px solid ${color}55` : "1px solid rgba(255,255,255,0.08)",
+  color: active ? color : "#64748B",
+  borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+});
+
 function ConsistencyProgressPanel({ engineState = {}, readiness, progress }) {
   const completedMap  = engineState.completedDays || {};
   const completedDays = Object.keys(completedMap).length;

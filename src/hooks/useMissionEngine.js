@@ -47,6 +47,9 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {
   // ── topic-level actions (curriculum.js) ──────────────────────────────────
   const markComplete   = (topicId)  => persist(completeTopic(engineState, curriculum, topicId));
   const markIncomplete = (topicId)  => persist(uncompleteTopic(engineState, topicId));
+  const isTopicComplete = (topicId) => !!(engineState.completed || {})[topicId];
+  const toggleTopicComplete = (topicId) =>
+    isTopicComplete(topicId) ? markIncomplete(topicId) : markComplete(topicId);
 
   // ── day-level actions (curriculum365.js / 365-day plan) ──────────────────
   const markDayComplete = (dayNum) => {
@@ -100,6 +103,8 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {
     progress,
     markComplete,
     markIncomplete,
+    isTopicComplete,
+    toggleTopicComplete,
     markDayComplete,
     markDayIncomplete,
     toggleDayComplete,

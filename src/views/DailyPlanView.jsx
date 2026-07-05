@@ -28,6 +28,7 @@ export function DailyPlanView({
   readiness = null, progress = null,
   addDSA, addGithubCommits,
   engineState = {}, markDayComplete, isDayComplete,
+  toggleTrackComplete, isTrackComplete,
 }) {
   const plan = getTodayPlan();
   const yp   = Math.round(yearProgress() * 100);
@@ -144,6 +145,8 @@ export function DailyPlanView({
               accent="#93C5FD"
               duration={plan.dayType === "sunday" ? "90 min" : "60 min"}
               content={plan.t1}
+              done={isTrackComplete ? isTrackComplete(plan.day, "t1") : false}
+              onToggle={() => toggleTrackComplete?.(plan.day, "t1")}
             />
             <TrackCard
               icon={<Code2 size={15} color="#6EE7B7" />}
@@ -151,6 +154,8 @@ export function DailyPlanView({
               accent="#6EE7B7"
               duration={plan.dayType === "sunday" ? "75 min" : "45 min"}
               content={plan.t2}
+              done={isTrackComplete ? isTrackComplete(plan.day, "t2") : false}
+              onToggle={() => toggleTrackComplete?.(plan.day, "t2")}
             />
             <TrackCard
               icon={<Brain size={15} color="#FCD34D" />}
@@ -158,6 +163,8 @@ export function DailyPlanView({
               accent="#FCD34D"
               duration={plan.dayType === "sunday" ? "75 min" : "45 min"}
               content={plan.t3}
+              done={isTrackComplete ? isTrackComplete(plan.day, "t3") : false}
+              onToggle={() => toggleTrackComplete?.(plan.day, "t3")}
             />
             <TrackCard
               icon={<Wrench size={15} color="#FB923C" />}
@@ -165,6 +172,8 @@ export function DailyPlanView({
               accent="#FB923C"
               duration={plan.dayType === "sunday" ? "60 min" : "30 min"}
               content={plan.t4}
+              done={isTrackComplete ? isTrackComplete(plan.day, "t4") : false}
+              onToggle={() => toggleTrackComplete?.(plan.day, "t4")}
             />
           </div>
 
@@ -207,8 +216,7 @@ export function DailyPlanView({
 
 // ─── sub-components ───────────────────────────────────────────────────────
 
-function TrackCard({ icon, label, accent, duration, content }) {
-  const [done, setDone] = useState(false);
+function TrackCard({ icon, label, accent, duration, content, done = false, onToggle }) {
   return (
     <div style={{
       borderRadius: 10, padding: "14px 16px",
@@ -221,7 +229,11 @@ function TrackCard({ icon, label, accent, duration, content }) {
           {icon}
           <span style={{ fontSize: 9, fontWeight: 700, color: "#64748B", letterSpacing: "0.06em" }}>{label}</span>
         </div>
-        <button onClick={() => setDone((d) => !d)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+        <button
+          onClick={onToggle}
+          title={done ? "Mark this task incomplete" : "Mark this task complete"}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
           {done
             ? <CheckCircle2 size={16} color={accent} />
             : <Circle size={16} color="#334155" />}

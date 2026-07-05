@@ -17,6 +17,7 @@ import { PLAN_365, dateForDay, todayDayNum } from "../data/curriculum365";
  */
 export function AllDaysView({
   engineState = {}, isDayComplete, markDayComplete, markDayIncomplete,
+  toggleTrackComplete, isTrackComplete,
 }) {
   const todayNum = todayDayNum();
   const completedDays = engineState.completedDays || {};
@@ -181,6 +182,8 @@ export function AllDaysView({
                     done={isDayComplete ? isDayComplete(d.day) : !!completedDays[d.day]}
                     onMarkDone={() => markDayComplete?.(d.day)}
                     onUndo={() => markDayIncomplete?.(d.day)}
+                    isTrackComplete={isTrackComplete}
+                    onToggleTrack={(trackKey) => toggleTrackComplete?.(d.day, trackKey)}
                   />
                 ))}
               </div>
@@ -194,10 +197,18 @@ export function AllDaysView({
 
 // ─── sub-components ─────────────────────────────────────────────────────
 
-function DayRow({ plan, isToday, done, onMarkDone, onUndo }) {
+const TRACK_DEFS = [
+  { key: "t1", icon: <BookOpen size={12} color="#93C5FD" />, label: "Foundations", color: "#93C5FD" },
+  { key: "t2", icon: <Code2    size={12} color="#6EE7B7" />, label: "Web Roadmap", color: "#6EE7B7" },
+  { key: "t3", icon: <Brain    size={12} color="#FCD34D" />, label: "DSA",         color: "#FCD34D" },
+  { key: "t4", icon: <Wrench   size={12} color="#FB923C" />, label: "Project",     color: "#FB923C" },
+];
+
+function DayRow({ plan, isToday, done, onMarkDone, onUndo, isTrackComplete, onToggleTrack }) {
   const [expanded, setExpanded] = useState(false);
   const date = dateForDay(plan.day);
   const dateLabel = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const tasksDone = TRACK_DEFS.filter((t) => isTrackComplete?.(plan.day, t.key)).length;
 
   return (
     <div
@@ -235,6 +246,13 @@ function DayRow({ plan, isToday, done, onMarkDone, onUndo }) {
                 DEEP WORK
               </span>
             )}
+            <span style={{
+              fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+              color: tasksDone === 4 ? "#6EE7B7" : "#64748B",
+              background: tasksDone === 4 ? "rgba(110,231,183,0.1)" : "rgba(255,255,255,0.04)",
+            }}>
+              {tasksDone}/4 tasks
+            </span>
           </div>
           <div style={{
             fontSize: 13, color: done ? "#64748B" : "#E2E8F0", marginTop: 3,
@@ -253,13 +271,19 @@ function DayRow({ plan, isToday, done, onMarkDone, onUndo }) {
 
       {expanded && (
         <div style={{ marginTop: 10, marginLeft: 31, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
-          <TrackLine icon={<BookOpen size={12} color="#93C5FD" />} label="Foundations" text={plan.t1} />
-          <TrackLine icon={<Code2 size={12} color="#6EE7B7" />} label="Web Roadmap" text={plan.t2} />
-          <TrackLine icon={<Brain size={12} color="#FCD34D" />} label="DSA" text={plan.t3} />
-          <TrackLine icon={<Wrench size={12} color="#FB923C" />} label="Project" text={plan.t4} />
+          {TRACK_DEFS.map((t) => (
+            <TrackLine
+              key={t.key}
+              icon={t.icon}
+              label={t.label}
+              text={plan[t.key]}
+              done={isTrackComplete ? isTrackComplete(plan.day, t.key) : false}
+              onToggle={() => onToggleTrack?.(t.key)}
+            />
+          ))}
           {done && (
             <button onClick={onUndo} style={{ ...pillBtn("#FB923C"), justifySelf: "start", marginTop: 4 }}>
-              <Undo2 size={12} /> Undo completion
+              <Undo2 size={12} /> Undo whole-day completion
             </button>
           )}
         </div>
@@ -268,13 +292,35 @@ function DayRow({ plan, isToday, done, onMarkDone, onUndo }) {
   );
 }
 
-function TrackLine({ icon, label, text }) {
+function TrackLine({ icon, label, text, done, onToggle }) {
   return (
-    <div style={{ display: "flex", gap: 7, alignItems: "flex-start" }}>
-      <div style={{ marginTop: 2 }}>{icon}</div>
-      <div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", letterSpacing: "0.05em" }}>{label.toUpperCase()}</div>
-        <div style={{ fontSize: 12, color: "#CBD5E1", marginTop: 1 }}>{text}</div>
+    <div
+      onClick={onToggle}
+      title={done ? "Mark this task incomplete" : "Mark this task complete"}
+      style={{
+        display: "flex", gap: 7, alignItems: "flex-start", cursor: "pointer",
+        padding: "6px 8px", borderRadius: 8,
+        background: done ? "rgba(110,231,183,0.06)" : "rgba(255,255,255,0.015)",
+        border: done ? "1px solid rgba(110,231,183,0.2)" : "1px solid rgba(255,255,255,0.05)",
+      }}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle?.(); }}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 1, display: "flex", flexShrink: 0 }}
+      >
+        {done ? <CheckCircle2 size={14} color="#6EE7B7" /> : <Circle size={14} color="#475569" />}
+      </button>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          {icon}
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#64748B", letterSpacing: "0.05em" }}>{label.toUpperCase()}</span>
+        </div>
+        <div style={{
+          fontSize: 12, color: done ? "#64748B" : "#CBD5E1", marginTop: 3,
+          textDecoration: done ? "line-through" : "none",
+        }}>
+          {text}
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,352 @@
+warning: in the working copy of 'src/hooks/usePomodoro.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/views/TimerView.jsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/INTEGRATION_365.md b/INTEGRATION_365.md[m
+[1mdeleted file mode 100644[m
+[1mindex b85111f..0000000[m
+[1m--- a/INTEGRATION_365.md[m
+[1m+++ /dev/null[m
+[36m@@ -1,125 +0,0 @@[m
+[31m-# 365-Day Plan Integration[m
+[31m-[m
+[31m-## New files — copy these into your repo[m
+[31m-[m
+[31m-| File | Destination |[m
+[31m-|---|---|[m
+[31m-| `curriculum365.js` | `src/data/curriculum365.js` |[m
+[31m-| `DailyPlanView.jsx` | `src/views/DailyPlanView.jsx` |[m
+[31m-| `useMissionEngine.js` | `src/hooks/useMissionEngine.js` *(replace the previous one)* |[m
+[31m-[m
+[31m-`curriculum.js`, `missionEngine.js`, `ReadinessPanel.jsx` stay the same — copy them if you haven't already.[m
+[31m-[m
+[31m----[m
+[31m-[m
+[31m-## `src/data/constants.js`[m
+[31m-[m
+[31m-Make `dailyPlan` the **first** item in `CONSISTENCY_NAV_ITEMS` (adds a new entry, rename whatever you called dailyMission if you already added it, or keep both):[m
+[31m-[m
+[31m-```js[m
+[31m-export const CONSISTENCY_NAV_ITEMS = [[m
+[31m-  { id: "dailyPlan",     label: "Daily Plan"     },   // ← NEW — main landing page[m
+[31m-  { id: "dailyMission",  label: "Daily Mission"  },   // existing[m
+[31m-  { id: "planner",       label: "Daily Planner"  },[m
+[31m-  ...[m
+[31m-];[m
+[31m-```[m
+[31m-[m
+[31m----[m
+[31m-[m
+[31m-## `src/components/Header.jsx`[m
+[31m-[m
+[31m-Add `CalendarDays` icon for the new entry:[m
+[31m-[m
+[31m-```js[m
+[31m-const CONSISTENCY_ICONS = {[m
+[31m-  dailyPlan:    CalendarDays,   // ← add[m
+[31m-  dailyMission: Rocket,[m
+[31m-  ...[m
+[31m-};[m
+[31m-```[m
+[31m-[m
+[31m-(`CalendarDays` is already imported from lucide-react if your planner uses it.)[m
+[31m-[m
+[31m----[m
+[31m-[m
+[31m-## `src/App.jsx`[m
+[31m-[m
+[31m-### 1. Import the new view[m
+[31m-[m
+[31m-```js[m
+[31m-import { DailyPlanView } from "./views/DailyPlanView";[m
+[31m-```[m
+[31m-[m
+[31m-### 2. Add to VIEW_MAP[m
+[31m-[m
+[31m-```js[m
+[31m-const VIEW_MAP = {[m
+[31m-  dashboard:   Dashboard,[m
+[31m-  dailyPlan:   DailyPlanView,   // ← add — make it the default for consistency[m
+[31m-  dailyMission: DailyMissionView,[m
+[31m-  ...[m
+[31m-};[m
+[31m-```[m
+[31m-[m
+[31m-### 3. Pass engine props into shared props[m
+[31m-[m
+[31m-If you did the previous integration, `useMissionEngine` already provides all props.[m
+[31m-The new props `DailyPlanView` needs are:[m
+[31m-[m
+[31m-```js[m
+[31m-// these already exist from useMissionEngine:[m
+[31m-markDayComplete: engine.markDayComplete,[m
+[31m-isDayComplete:   engine.isDayComplete,[m
+[31m-```[m
+[31m-[m
+[31m-Add them to `sharedProps` alongside the existing engine props:[m
+[31m-[m
+[31m-```js[m
+[31m-const sharedProps = {[m
+[31m-  ...existingProps,[m
+[31m-  // engine (already added previously):[m
+[31m-  todayTopics:      engine.todayTopics,[m
+[31m-  revisionTopics:   engine.revisionTopics,[m
+[31m-  bonus:            engine.bonus,[m
+[31m-  readiness:        engine.readiness,[m
+[31m-  progress:         engine.progress,[m
+[31m-  markComplete:     engine.markComplete,[m
+[31m-  markIncomplete:   engine.markIncomplete,[m
+[31m-  addDSA:           engine.addDSA,[m
+[31m-  addGithubCommits: engine.addGithubCommits,[m
+[31m-  // NEW:[m
+[31m-  markDayComplete:  engine.markDayComplete,[m
+[31m-  isDayComplete:    engine.isDayComplete,[m
+[31m-  engineState:      engine.engineState,[m
+[31m-};[m
+[31m-```[m
+[31m-[m
+[31m----[m
+[31m-[m
+[31m-## Make Daily Plan the default Consistency landing page[m
+[31m-[m
+[31m-In App.jsx, find where you handle the default view for Consistency (likely where clicking "Consistency" in the header sets the view). Change the default from whatever it was to `"dailyPlan"`.[m
+[31m-[m
+[31m-Or in Header.jsx, if clicking the "Consistency" header item (not a sub-item) navigates somewhere, point it to `"dailyPlan"`.[m
+[31m-[m
+[31m----[m
+[31m-[m
+[31m-## How it works[m
+[31m-[m
+[31m-- `getTodayPlan()` in `curriculum365.js` computes `Math.floor((today - 2026-07-01) / 86400000)` and returns the matching row from `PLAN_365`. No state needed — pure date math.[m
+[31m-- The "Mark Day Complete" button writes to `users/{uid}/missionEngine.completedDays[dayNum]`, which Firebase syncs.[m
+[31m-- Each track card has its own local checkbox for within-session tracking of individual tracks — this isn't persisted (intentionally lightweight for v1).[m
+[31m-- Year progress ring fills based on elapsed days since July 1 2026.[m
+[31m-- DSA / GitHub counts persist to Firebase via `addDSA` / `addGithubCommits` (same as before).[m
+[31m-[m
+[31m----[m
+[31m-[m
+[31m-## Test checklist[m
+[31m-[m
+[31m-1. Open Daily Plan — should show Day N / 365, today's stage name, and 4 track cards with today's tasks.[m
+[31m-2. Check the day type: Monday–Saturday shows "60 min / 45 min / 45 min / 30 min"; Sunday shows "90 / 75 / 75 / 60".[m
+[31m-3. Mark individual tracks done (local checkboxes go green).[m
+[31m-4. Click "Mark Day Complete" — confetti fires, banner appears.[m
+[31m-5. Refresh — "Day X Complete" persists (Firebase sync confirmed).[m
+[31m-6. Log DSA and commits, refresh, confirm readiness panel updated.[m
+[1mdiff --git a/README.md b/README.md[m
+[1mdeleted file mode 100644[m
+[1mindex 170cd1d..0000000[m
+[1m--- a/README.md[m
+[1m+++ /dev/null[m
+[36m@@ -1,65 +0,0 @@[m
+[31m-# DevTrack[m
+[31m-[m
+[31m-DevTrack is a personal productivity and study tracker I built to see how much time I actually spend studying and coding, instead of just guessing. You sign in with Google, start a timer when you sit down to work, and it keeps track of everything from there - streaks, goals, and a 365 day study plan.[m
+[31m-[m
+[31m-Live link: https://devtrack-mu.vercel.app[m
+[31m-[m
+[31m-## What it does[m
+[31m-[m
+[31m-- **Timer** - press start when you start studying, press stop when you're done. Also has a manual entry if you forget to start it, and a Pomodoro mode (25 min work / 5 min break)[m
+[31m-- **Dashboard** - shows today's time, this week's time, your streak, some charts (bar chart / pie chart / trend lines), recent sessions[m
+[31m-- **365 Day Plan** - I made a big curriculum plan split across 365 days (Foundations / Web / DSA / Projects tracks). You can mark days done, and there's a page called "All Days" where you can filter by All / Done / Missed / Upcoming so you can see what you fell behind on[m
+[31m-- **Missed tasks on Dashboard** - this was the newest thing I added. If you have days in the plan that are in the past and you never marked them done, the Dashboard now shows a "MISSED" stat plus a callout listing which days you missed, so you don't have to go dig through the All Days page to find out you're behind[m
+[31m-- **Goals** - set a daily/weekly time goal, and per-category goals too (like "30 min DSA every day"), with a reminder notification if you haven't hit it yet[m
+[31m-- **Categories & Projects** - tag your sessions so you know where your time actually goes[m
+[31m-- **Backup/export** - you can export your data as JSON or CSV, and restore from a JSON backup if something breaks[m
+[31m-- **Google Sign-in** - no passwords, just Google login through Firebase[m
+[31m-[m
+[31m-## Built with[m
+[31m-[m
+[31m-- React + Vite[m
+[31m-- Firebase (Auth + Realtime Database)[m
+[31m-- Recharts for the graphs[m
+[31m-- lucide-react for icons[m
+[31m-- Deployed on Vercel[m
+[31m-[m
+[31m-## Running it yourself[m
+[31m-[m
+[31m-1. Clone it[m
+[31m-[m
+[31m-```[m
+[31m-git clone https://github.com/sravankumar-0710/Devtrack.git[m
+[31m-cd Devtrack[m
+[31m-npm install[m
+[31m-```[m
+[31m-[m
+[31m-2. You'll need your own Firebase project (turn on Auth with Google provider + Realtime Database). Put your config in `src/firebase.js`, something like:[m
+[31m-[m
+[31m-```js[m
+[31m-const firebaseConfig = {[m
+[31m-  apiKey: "...",[m
+[31m-  authDomain: "...",[m
+[31m-  databaseURL: "...",[m
+[31m-  projectId: "...",[m
+[31m-  storageBucket: "...",[m
+[31m-  messagingSenderId: "...",[m
+[31m-  appId: "...",[m
+[31m-};[m
+[31m-```[m
+[31m-[m
+[31m-3. Run it[m
+[31m-[m
+[31m-```[m
+[31m-npm run dev[m
+[31m-```[m
+[31m-[m
+[31m-That should start it up on localhost. To build for production it's just `npm run build`.[m
+[31m-[m
+[31m-## Project folder[m
+[31m-[m
+[31m-- `src/views` - the actual pages (Dashboard, Timer, AllDaysView, Settings etc)[m
+[31m-- `src/components` - smaller reusable pieces[m
+[31m-- `src/hooks` - stuff like useAuth, useTimer, useMissionEngine (this one runs the 365 day plan logic)[m
+[31m-- `src/data` - the curriculum data + constants[m
+[31m-- `docs/` - I wrote up a PRD and some architecture notes if you want more detail, check `docs/prd.md`[m
+[31m-[m
+[1mdiff --git a/all-days-feature.patch b/all-days-feature.patch[m
+[1mdeleted file mode 100644[m
+[1mindex 3bac106..0000000[m
+[1m--- a/all-days-feature.patch[m
+[1m+++ /dev/null[m
+[36m@@ -1,445 +0,0 @@[m
+[31m-diff --git a/src/App.jsx b/src/App.jsx[m
+[31m-index 8094794..5fcc95f 100644[m
+[31m---- a/src/App.jsx[m
+[31m-+++ b/src/App.jsx[m
+[31m-@@ -37,6 +37,7 @@ import { WeeklyReviewView }   from "./views/WeeklyReviewView";[m
+[31m- import { StatisticsView }     from "./views/StatisticsView";[m
+[31m- import { DailyMissionView }   from "./views/DailyMissionView";[m
+[31m- import { DailyPlanView } from "./views/DailyPlanView";[m
+[31m-+import { AllDaysView } from "./views/AllDaysView";[m
+[31m- import { useMissionEngine } from "./hooks/useMissionEngine";[m
+[31m- [m
+[31m- const VIEW_MAP = {[m
+[31m-@@ -47,6 +48,7 @@ const VIEW_MAP = {[m
+[31m-   settings:  SettingsView,[m
+[31m-   // Project Consistency[m
+[31m-   dailyPlan:      DailyPlanView,[m
+[31m-+  allDays:        AllDaysView,[m
+[31m-   dailyMission:   DailyMissionView,[m
+[31m-   planner:        DailyPlannerView,[m
+[31m-   goals:          GoalsView,[m
+[31m-@@ -179,11 +181,11 @@ export default function App() {[m
+[31m-     markIncomplete:   engine.markIncomplete,[m
+[31m-     addDSA:           engine.addDSA,[m
+[31m-     addGithubCommits: engine.addGithubCommits,[m
+[31m--    markDayComplete:  engine.markDayComplete,[m
+[31m--    isDayComplete:    engine.isDayComplete,[m
+[31m--    engineState:      engine.engineState,[m
+[31m--    markDayComplete: engine.markDayComplete,[m
+[31m--    isDayComplete:   engine.isDayComplete,[m
+[31m-+    markDayComplete:   engine.markDayComplete,[m
+[31m-+    markDayIncomplete: engine.markDayIncomplete,[m
+[31m-+    toggleDayComplete: engine.toggleDayComplete,[m
+[31m-+    isDayComplete:     engine.isDayComplete,[m
+[31m-+    engineState:       engine.engineState,[m
+[31m-   };[m
+[31m- [m
+[31m-   return ([m
+[31m-diff --git a/src/components/Header.jsx b/src/components/Header.jsx[m
+[31m-index 876318d..9bb294c 100644[m
+[31m---- a/src/components/Header.jsx[m
+[31m-+++ b/src/components/Header.jsx[m
+[31m-@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";[m
+[31m- import {[m
+[31m-   BarChart2, Clock, TrendingUp, Settings, LogOut,[m
+[31m-   Target, Map, Award, Flame, StickyNote, Library, GraduationCap, ChevronDown,[m
+[31m--  CalendarDays, Code2, Brain, BarChart3, ClipboardCheck, Rocket,[m
+[31m-+  CalendarDays, Code2, Brain, BarChart3, ClipboardCheck, Rocket, CalendarRange,[m
+[31m- } from "lucide-react";[m
+[31m- import { NAV_ITEMS, CONSISTENCY_NAV_ITEMS } from "../data/constants";[m
+[31m- import { fmtDuration } from "../utils/helpers";[m
+[31m-@@ -11,6 +11,7 @@ const NAV_ICONS = { dashboard: BarChart2, timer: Clock, reports: TrendingUp, set[m
+[31m- [m
+[31m- const CONSISTENCY_ICONS = {[m
+[31m-   dailyPlan: CalendarDays,[m
+[31m-+  allDays: CalendarRange,[m
+[31m-   dailyMission: Rocket,[m
+[31m-   planner: CalendarDays, goals: Target, roadmap: Map, projects: Code2,[m
+[31m-   certifications: Award, studySessions: Brain, resources: Library,[m
+[31m-diff --git a/src/data/constants.js b/src/data/constants.js[m
+[31m-index cbf5075..cdb08e4 100644[m
+[31m---- a/src/data/constants.js[m
+[31m-+++ b/src/data/constants.js[m
+[31m-@@ -36,6 +36,7 @@ export const NAV_ITEMS = [[m
+[31m- // "Project Consistency" feature set — life/career operating system[m
+[31m- export const CONSISTENCY_NAV_ITEMS = [[m
+[31m-   { id: "dailyPlan",      label: "Daily Plan" },[m
+[31m-+  { id: "allDays",        label: "All Days" },[m
+[31m-   { id: "dailyMission",   label: "Daily Mission"  },[m
+[31m-   { id: "planner",        label: "Daily Planner"  },[m
+[31m-   { id: "goals",          label: "Goals"          },[m
+[31m-diff --git a/src/data/curriculum365.js b/src/data/curriculum365.js[m
+[31m-index 2c5a8af..eebc733 100644[m
+[31m---- a/src/data/curriculum365.js[m
+[31m-+++ b/src/data/curriculum365.js[m
+[31m-@@ -390,6 +390,26 @@ export function getDayPlan(date = new Date()) {[m
+[31m- /** Return the plan entry for today. */[m
+[31m- export function getTodayPlan() { return getDayPlan(new Date()); }[m
+[31m- [m
+[31m-+/** Given a 1-based day number, return its PLAN_365 entry (or null if out of range). */[m
+[31m-+export function getPlanForDay(dayNum) {[m
+[31m-+  if (!dayNum || dayNum < 1 || dayNum > PLAN_365.length) return null;[m
+[31m-+  return PLAN_365[dayNum - 1];[m
+[31m-+}[m
+[31m-+[m
+[31m-+/** Given a 1-based day number, return the calendar Date it falls on. */[m
+[31m-+export function dateForDay(dayNum) {[m
+[31m-+  const start = new Date(PLAN_START_DATE + "T00:00:00");[m
+[31m-+  const d = new Date(start);[m
+[31m-+  d.setDate(d.getDate() + (dayNum - 1));[m
+[31m-+  return d;[m
+[31m-+}[m
+[31m-+[m
+[31m-+/** The 1-based day number for "today" (may be <1 before start, or >365 after the plan ends). */[m
+[31m-+export function todayDayNum() {[m
+[31m-+  const start = new Date(PLAN_START_DATE + "T00:00:00");[m
+[31m-+  return Math.floor((new Date() - start) / 86400000) + 1;[m
+[31m-+}[m
+[31m-+[m
+[31m- /** 0-based progress through the year (0.0 – 1.0). */[m
+[31m- export function yearProgress() {[m
+[31m-   const start = new Date(PLAN_START_DATE + "T00:00:00");[m
+[31m-diff --git a/src/hooks/useMissionEngine.js b/src/hooks/useMissionEngine.js[m
+[31m-index 4bcfca8..5ee0af9 100644[m
+[31m---- a/src/hooks/useMissionEngine.js[m
+[31m-+++ b/src/hooks/useMissionEngine.js[m
+[31m-@@ -54,6 +54,18 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {[m
+[31m-     const completedDays = { ...(engineState.completedDays || {}), [dayNum]: new Date().toISOString() };[m
+[31m-     persist({ ...engineState, completedDays });[m
+[31m-   };[m
+[31m-+  // Undo a day that was marked complete by mistake (e.g. fat-fingered the wrong day).[m
+[31m-+  const markDayIncomplete = (dayNum) => {[m
+[31m-+    if (!dayNum) return;[m
+[31m-+    const completedDays = { ...(engineState.completedDays || {}) };[m
+[31m-+    delete completedDays[dayNum];[m
+[31m-+    persist({ ...engineState, completedDays });[m
+[31m-+  };[m
+[31m-+  // Toggle helper — handy for a single click target in list UIs.[m
+[31m-+  const toggleDayComplete = (dayNum) => {[m
+[31m-+    if (!dayNum) return;[m
+[31m-+    isDayComplete(dayNum) ? markDayIncomplete(dayNum) : markDayComplete(dayNum);[m
+[31m-+  };[m
+[31m-   const isDayComplete = (dayNum) => !!(engineState.completedDays || {})[dayNum];[m
+[31m- [m
+[31m-   // ── logging ──────────────────────────────────────────────────────────────[m
+[31m-@@ -77,6 +89,8 @@ export function useMissionEngine(uid, curriculum = CURRICULUM) {[m
+[31m-     markComplete,[m
+[31m-     markIncomplete,[m
+[31m-     markDayComplete,[m
+[31m-+    markDayIncomplete,[m
+[31m-+    toggleDayComplete,[m
+[31m-     isDayComplete,[m
+[31m-     addDSA,[m
+[31m-     addGithubCommits,[m
+[31m-diff --git a/src/views/AllDaysView.jsx b/src/views/AllDaysView.jsx[m
+[31m-new file mode 100644[m
+[31m-index 0000000..facdbdb[m
+[31m---- /dev/null[m
+[31m-+++ b/src/views/AllDaysView.jsx[m
+[31m-@@ -0,0 +1,306 @@[m
+[31m-+import { useMemo, useState } from "react";[m
+[31m-+import {[m
+[31m-+  CalendarRange, CheckCircle2, Circle
