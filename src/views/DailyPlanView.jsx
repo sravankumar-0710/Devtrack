@@ -5,7 +5,8 @@ import {
   Quote, Sparkles, Github, Gauge, Plus, RotateCcw,
 } from "lucide-react";
 import { Card } from "../components/Card";
-import { getTodayPlan, yearProgress, PLAN_START_DATE } from "../data/curriculum365";
+import { getTodayPlan, yearProgress, PLAN_START_DATE, joinField, stageLabel, DSA_YEAR_TARGET } from "../data/curriculum365";
+import { Award, Target as TargetIcon, ListChecks } from "lucide-react";
 import { ReadinessPanel } from "../components/ReadinessPanel";
 import { QUOTES } from "../data/consistencyConstants";
 import { fmtDuration } from "../utils/helpers";
@@ -77,8 +78,13 @@ export function DailyPlanView({
         </div>
 
         <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: "0 0 4px", lineHeight: 1.2 }}>
-          {plan ? plan.stage : "Your 365-Day Journey"}
+          {plan ? plan.focus : "Your 365-Day Journey"}
         </h1>
+        {plan && (
+          <div style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>
+            Volume {plan.volume} — {plan.volumeTitle} · {stageLabel(plan)}
+          </div>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#94A3B8", fontSize: 13, fontStyle: "italic", marginBottom: 22 }}>
           <Quote size={13} color="#FCD34D" />
@@ -141,41 +147,83 @@ export function DailyPlanView({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
             <TrackCard
               icon={<BookOpen size={15} color="#93C5FD" />}
-              label="TRACK 1 · FOUNDATIONS"
+              label="LEARN"
               accent="#93C5FD"
               duration={plan.dayType === "sunday" ? "90 min" : "60 min"}
-              content={plan.t1}
+              content={joinField(plan.learn)}
               done={isTrackComplete ? isTrackComplete(plan.day, "t1") : false}
               onToggle={() => toggleTrackComplete?.(plan.day, "t1")}
             />
             <TrackCard
               icon={<Code2 size={15} color="#6EE7B7" />}
-              label="TRACK 2 · WEB ROADMAP"
+              label="PRACTICE"
               accent="#6EE7B7"
               duration={plan.dayType === "sunday" ? "75 min" : "45 min"}
-              content={plan.t2}
+              content={joinField(plan.practice)}
               done={isTrackComplete ? isTrackComplete(plan.day, "t2") : false}
               onToggle={() => toggleTrackComplete?.(plan.day, "t2")}
             />
             <TrackCard
               icon={<Brain size={15} color="#FCD34D" />}
-              label="TRACK 3 · DSA PRACTICE"
+              label="DSA"
               accent="#FCD34D"
               duration={plan.dayType === "sunday" ? "75 min" : "45 min"}
-              content={plan.t3}
+              content={joinField(plan.dsaTopic)}
               done={isTrackComplete ? isTrackComplete(plan.day, "t3") : false}
               onToggle={() => toggleTrackComplete?.(plan.day, "t3")}
             />
             <TrackCard
               icon={<Wrench size={15} color="#FB923C" />}
-              label="TRACK 4 · PROJECT TASK"
+              label="PROJECT"
               accent="#FB923C"
               duration={plan.dayType === "sunday" ? "60 min" : "30 min"}
-              content={plan.t4}
+              content={joinField(plan.project)}
               done={isTrackComplete ? isTrackComplete(plan.day, "t4") : false}
               onToggle={() => toggleTrackComplete?.(plan.day, "t4")}
             />
           </div>
+
+          {/* DSA target + certification + checkpoint */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+            {plan.dsaTarget != null && (
+              <span style={chipStyle("#FCD34D")}>
+                <TargetIcon size={12} /> Solve {plan.dsaTarget} today — {plan.dsaRunningTotal}/{plan.dsaYearTotal ?? DSA_YEAR_TARGET} this year
+              </span>
+            )}
+            {joinField(plan.certification) && (
+              <span style={chipStyle("#C4B5FD")}>
+                <Award size={12} /> {joinField(plan.certification)}
+              </span>
+            )}
+          </div>
+
+          {plan.checkpoint?.length > 0 && (
+            <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <ListChecks size={13} color="#64748B" />
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#64748B", letterSpacing: "0.06em" }}>CHECKPOINT</span>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {plan.checkpoint.map((c, i) => (
+                  <li key={i} style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.6 }}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {plan.weeklyMiniProject?.length > 0 && (
+            <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 10, background: "rgba(110,231,183,0.06)", border: "1px solid rgba(110,231,183,0.2)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#6EE7B7", letterSpacing: "0.06em", marginBottom: 6 }}>WEEKLY MINI PROJECT</div>
+              <div style={{ fontSize: 13, color: "#CBD5E1", lineHeight: 1.5 }}>{joinField(plan.weeklyMiniProject)}</div>
+            </div>
+          )}
+
+          {plan.weeklyAssessment?.length > 0 && (
+            <div style={{ marginTop: 10, padding: "12px 14px", borderRadius: 10, background: "rgba(196,181,253,0.06)", border: "1px solid rgba(196,181,253,0.2)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#C4B5FD", letterSpacing: "0.06em", marginBottom: 6 }}>WEEKLY ASSESSMENT</div>
+              <div style={{ fontSize: 13, color: "#CBD5E1", lineHeight: 1.5 }}>{joinField(plan.weeklyAssessment)}</div>
+            </div>
+          )}
 
           {done && (
             <div style={{
@@ -349,6 +397,13 @@ const pillBtn = (color) => ({
   background: `${color}1A`, border: `1px solid ${color}55`,
   color, borderRadius: 8, padding: "9px 14px", fontSize: 12, fontWeight: 700,
   cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+});
+
+const chipStyle = (color) => ({
+  display: "flex", alignItems: "center", gap: 5,
+  fontSize: 11, fontWeight: 700, color,
+  background: `${color}1A`, border: `1px solid ${color}44`,
+  borderRadius: 8, padding: "6px 10px",
 });
 
 const ghostBtn = {

@@ -4,7 +4,10 @@ import {
   Search, Rocket, BookOpen, Code2, Brain, Wrench, X, Undo2,
 } from "lucide-react";
 import { Card } from "../components/Card";
-import { PLAN_365, dateForDay, todayDayNum } from "../data/curriculum365";
+import { PLAN_365, dateForDay, todayDayNum, joinField } from "../data/curriculum365";
+
+const TRACK_FIELD = { t1: "learn", t2: "practice", t3: "dsaTopic", t4: "project" };
+const groupLabel = (d) => `Volume ${d.volume} — ${d.volumeTitle}`;
 
 /**
  * AllDaysView — see every day of the 365-day plan at once, grouped by stage.
@@ -27,7 +30,7 @@ export function AllDaysView({
   const [filter, setFilter] = useState("all"); // all | done | missed | upcoming
   const [openStages, setOpenStages] = useState(() => {
     const day = PLAN_365[Math.min(Math.max(todayNum - 1, 0), PLAN_365.length - 1)];
-    return new Set(day ? [day.stage] : []);
+    return new Set(day ? [groupLabel(day)] : []);
   });
 
   const q = query.trim().toLowerCase();
@@ -35,8 +38,9 @@ export function AllDaysView({
   const stages = useMemo(() => {
     const byStage = new Map();
     PLAN_365.forEach((d) => {
-      if (!byStage.has(d.stage)) byStage.set(d.stage, []);
-      byStage.get(d.stage).push(d);
+      const label = groupLabel(d);
+      if (!byStage.has(label)) byStage.set(label, []);
+      byStage.get(label).push(d);
     });
     return [...byStage.entries()];
   }, []);
@@ -45,11 +49,13 @@ export function AllDaysView({
     if (!q) return true;
     return (
       String(d.day).includes(q) ||
-      d.stage.toLowerCase().includes(q) ||
-      d.t1.toLowerCase().includes(q) ||
-      d.t2.toLowerCase().includes(q) ||
-      d.t3.toLowerCase().includes(q) ||
-      d.t4.toLowerCase().includes(q)
+      groupLabel(d).toLowerCase().includes(q) ||
+      d.weekTitle.toLowerCase().includes(q) ||
+      d.focus.toLowerCase().includes(q) ||
+      joinField(d.learn).toLowerCase().includes(q) ||
+      joinField(d.practice).toLowerCase().includes(q) ||
+      joinField(d.dsaTopic).toLowerCase().includes(q) ||
+      joinField(d.project).toLowerCase().includes(q)
     );
   };
 
@@ -72,7 +78,7 @@ export function AllDaysView({
   const jumpToToday = () => {
     const day = PLAN_365[Math.min(Math.max(todayNum - 1, 0), PLAN_365.length - 1)];
     if (!day) return;
-    setOpenStages((prev) => new Set(prev).add(day.stage));
+    setOpenStages((prev) => new Set(prev).add(groupLabel(day)));
     setFilter("all");
     setQuery("");
     requestAnimationFrame(() => {
@@ -198,10 +204,10 @@ export function AllDaysView({
 // ─── sub-components ─────────────────────────────────────────────────────
 
 const TRACK_DEFS = [
-  { key: "t1", icon: <BookOpen size={12} color="#93C5FD" />, label: "Foundations", color: "#93C5FD" },
-  { key: "t2", icon: <Code2    size={12} color="#6EE7B7" />, label: "Web Roadmap", color: "#6EE7B7" },
-  { key: "t3", icon: <Brain    size={12} color="#FCD34D" />, label: "DSA",         color: "#FCD34D" },
-  { key: "t4", icon: <Wrench   size={12} color="#FB923C" />, label: "Project",     color: "#FB923C" },
+  { key: "t1", icon: <BookOpen size={12} color="#93C5FD" />, label: "Learn",    color: "#93C5FD" },
+  { key: "t2", icon: <Code2    size={12} color="#6EE7B7" />, label: "Practice", color: "#6EE7B7" },
+  { key: "t3", icon: <Brain    size={12} color="#FCD34D" />, label: "DSA",      color: "#FCD34D" },
+  { key: "t4", icon: <Wrench   size={12} color="#FB923C" />, label: "Project",  color: "#FB923C" },
 ];
 
 function DayRow({ plan, isToday, done, onMarkDone, onUndo, isTrackComplete, onToggleTrack }) {
@@ -253,6 +259,14 @@ function DayRow({ plan, isToday, done, onMarkDone, onUndo, isTrackComplete, onTo
             }}>
               {tasksDone}/4 tasks
             </span>
+            {plan.dsaTarget != null && (
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#FCD34D", background: "rgba(252,211,77,0.1)", padding: "2px 6px", borderRadius: 4 }}>
+                DSA {plan.dsaRunningTotal}/{plan.dsaYearTotal}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>
+            Week {plan.week} — {plan.weekTitle}
           </div>
           <div style={{
             fontSize: 13, color: done ? "#64748B" : "#E2E8F0", marginTop: 3,
@@ -260,7 +274,7 @@ function DayRow({ plan, isToday, done, onMarkDone, onUndo, isTrackComplete, onTo
             whiteSpace: expanded ? "normal" : "nowrap", overflow: expanded ? "visible" : "hidden",
             textOverflow: expanded ? "clip" : "ellipsis",
           }}>
-            {plan.t2}
+            {plan.focus}
           </div>
         </div>
 
@@ -270,17 +284,45 @@ function DayRow({ plan, isToday, done, onMarkDone, onUndo, isTrackComplete, onTo
       </div>
 
       {expanded && (
-        <div style={{ marginTop: 10, marginLeft: 31, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
-          {TRACK_DEFS.map((t) => (
-            <TrackLine
-              key={t.key}
-              icon={t.icon}
-              label={t.label}
-              text={plan[t.key]}
-              done={isTrackComplete ? isTrackComplete(plan.day, t.key) : false}
-              onToggle={() => onToggleTrack?.(t.key)}
-            />
-          ))}
+        <div style={{ marginTop: 10, marginLeft: 31 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8, marginBottom: 8 }}>
+            {TRACK_DEFS.map((t) => (
+              <TrackLine
+                key={t.key}
+                icon={t.icon}
+                label={t.label}
+                text={joinField(plan[TRACK_FIELD[t.key]])}
+                done={isTrackComplete ? isTrackComplete(plan.day, t.key) : false}
+                onToggle={() => onToggleTrack?.(t.key)}
+              />
+            ))}
+          </div>
+
+          {(joinField(plan.certification) || joinField(plan.revision)) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 11, color: "#94A3B8", marginBottom: 8 }}>
+              {joinField(plan.certification) && <span><b style={{ color: "#C4B5FD" }}>Certification:</b> {joinField(plan.certification)}</span>}
+              {joinField(plan.revision) && <span><b style={{ color: "#64748B" }}>Revision:</b> {joinField(plan.revision)}</span>}
+            </div>
+          )}
+
+          {plan.checkpoint?.length > 0 && (
+            <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 8 }}>
+              <b style={{ color: "#64748B" }}>Checkpoint:</b> {joinField(plan.checkpoint)}
+            </div>
+          )}
+
+          {plan.weeklyMiniProject?.length > 0 && (
+            <div style={{ fontSize: 11, color: "#6EE7B7", marginBottom: 8 }}>
+              <b>Weekly Mini Project:</b> {joinField(plan.weeklyMiniProject)}
+            </div>
+          )}
+
+          {plan.weeklyAssessment?.length > 0 && (
+            <div style={{ fontSize: 11, color: "#C4B5FD", marginBottom: 8 }}>
+              <b>Weekly Assessment:</b> {joinField(plan.weeklyAssessment)}
+            </div>
+          )}
+
           {done && (
             <button onClick={onUndo} style={{ ...pillBtn("#FB923C"), justifySelf: "start", marginTop: 4 }}>
               <Undo2 size={12} /> Undo whole-day completion

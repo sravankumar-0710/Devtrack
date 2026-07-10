@@ -12,16 +12,8 @@ import {
   fmtDuration, fmtH, today,
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
-import { getTodayPlan, yearProgress, todayDayNum, PLAN_365, dateForDay, joinField, stageLabel, DSA_YEAR_TARGET } from "../data/curriculum365";
-import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy, ClipboardList, Search, X, Award, Target } from "lucide-react";
-
-// Map the 4 legacy track keys (kept for Firebase-state backward-compat) onto
-// the real syllabus fields.
-const TRACK_FIELD = { t1: "learn", t2: "practice", t3: "dsaTopic", t4: "project" };
-function trackContent(plan, key) {
-  if (!plan) return "";
-  return joinField(plan[TRACK_FIELD[key]]);
-}
+import { getTodayPlan, yearProgress, todayDayNum, PLAN_365, dateForDay } from "../data/curriculum365";
+import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy, ClipboardList, Search, X, AlertTriangle, GitCommit, Sparkles } from "lucide-react";
 export function Dashboard({
   entries, categories, projects, goals, activityGoals, todaySeconds, weekSeconds, streak, deleteEntry,
   lifeGoals = [], roadmapItems = [], certifications = [],
@@ -469,10 +461,10 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, i
   if (!plan) return null;
 
   const tracks = [
-    { key: "t1", icon: <BookOpen size={13} color="#93C5FD" />, label: "LEARN",    content: trackContent(plan, "t1"), color: "#93C5FD", time: plan.dayType === "sunday" ? "90m" : "60m" },
-    { key: "t2", icon: <Code2    size={13} color="#6EE7B7" />, label: "PRACTICE", content: trackContent(plan, "t2"), color: "#6EE7B7", time: plan.dayType === "sunday" ? "75m" : "45m" },
-    { key: "t3", icon: <Brain    size={13} color="#FCD34D" />, label: "DSA",      content: trackContent(plan, "t3"), color: "#FCD34D", time: plan.dayType === "sunday" ? "75m" : "45m" },
-    { key: "t4", icon: <Wrench   size={13} color="#FB923C" />, label: "PROJECT",  content: trackContent(plan, "t4"), color: "#FB923C", time: plan.dayType === "sunday" ? "60m" : "30m" },
+    { key: "t1", icon: <BookOpen size={13} color="#93C5FD" />, label: "FOUNDATIONS", content: plan.t1, color: "#93C5FD", time: plan.dayType === "sunday" ? "90m" : "60m" },
+    { key: "t2", icon: <Code2    size={13} color="#6EE7B7" />, label: "WEB ROADMAP", content: plan.t2, color: "#6EE7B7", time: plan.dayType === "sunday" ? "75m" : "45m" },
+    { key: "t3", icon: <Brain    size={13} color="#FCD34D" />, label: "DSA PRACTICE", content: plan.t3, color: "#FCD34D", time: plan.dayType === "sunday" ? "75m" : "45m" },
+    { key: "t4", icon: <Wrench   size={13} color="#FB923C" />, label: "PROJECT TASK", content: plan.t4, color: "#FB923C", time: plan.dayType === "sunday" ? "60m" : "30m" },
   ];
 
   const handleDone = () => {
@@ -527,16 +519,12 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, i
       </div>
 
       {/* Stage name */}
-      <div style={{ fontSize: 11, color: "#475569", marginBottom: 4, fontStyle: "italic" }}>
-        Volume {plan.volume} — {plan.volumeTitle} · {stageLabel(plan)}
-      </div>
-      {/* Focus of the day */}
-      <div style={{ fontSize: 15, fontWeight: 700, color: "#E2E8F0", marginBottom: 12 }}>
-        {plan.focus}
+      <div style={{ fontSize: 11, color: "#475569", marginBottom: 12, fontStyle: "italic" }}>
+        {plan.stage}
       </div>
 
       {/* 4 track cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {tracks.map((t) => (
           <TrackMini
             key={t.key}
@@ -546,28 +534,6 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, i
           />
         ))}
       </div>
-
-      {/* DSA target + certification chips */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: (plan.weeklyMiniProject?.length || plan.checkpoint?.length) ? 12 : 0 }}>
-        {plan.dsaTarget != null && (
-          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#FCD34D", background: "rgba(252,211,77,0.1)", border: "1px solid rgba(252,211,77,0.25)", borderRadius: 8, padding: "5px 10px" }}>
-            <Target size={12} /> Solve {plan.dsaTarget} today — {plan.dsaRunningTotal}/{plan.dsaYearTotal ?? DSA_YEAR_TARGET} this year
-          </span>
-        )}
-        {joinField(plan.certification) && (
-          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#C4B5FD", background: "rgba(196,181,253,0.1)", border: "1px solid rgba(196,181,253,0.25)", borderRadius: 8, padding: "5px 10px" }}>
-            <Award size={12} /> {joinField(plan.certification)}
-          </span>
-        )}
-      </div>
-
-      {/* Weekly mini project banner (only shows on the day it's assigned) */}
-      {plan.weeklyMiniProject?.length > 0 && (
-        <div style={{ marginTop: 4, padding: "10px 12px", borderRadius: 8, background: "rgba(110,231,183,0.06)", border: "1px solid rgba(110,231,183,0.2)" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#6EE7B7", letterSpacing: "0.05em", marginBottom: 4 }}>WEEKLY MINI PROJECT</div>
-          <div style={{ fontSize: 12, color: "#CBD5E1" }}>{joinField(plan.weeklyMiniProject)}</div>
-        </div>
-      )}
     </Card>
   );
 }
@@ -605,10 +571,10 @@ function TrackMini({ icon, label, content, color, time, done, onToggle }) {
 // ─── TASK CLIPBOARD — missed & upcoming individual tasks, filterable by type ──
 
 const CLIPBOARD_TRACKS = [
-  { key: "t1", label: "Learn",    icon: <BookOpen size={11} />, color: "#93C5FD" },
-  { key: "t2", label: "Practice", icon: <Code2    size={11} />, color: "#6EE7B7" },
-  { key: "t3", label: "DSA",      icon: <Brain    size={11} />, color: "#FCD34D" },
-  { key: "t4", label: "Project",  icon: <Wrench   size={11} />, color: "#FB923C" },
+  { key: "t1", label: "Foundations", icon: <BookOpen size={11} />, color: "#93C5FD" },
+  { key: "t2", label: "Web Roadmap", icon: <Code2    size={11} />, color: "#6EE7B7" },
+  { key: "t3", label: "DSA",         icon: <Brain    size={11} />, color: "#FCD34D" },
+  { key: "t4", label: "Project",     icon: <Wrench   size={11} />, color: "#FB923C" },
 ];
 const UPCOMING_WINDOW_DAYS = 14;
 const PAGE_SIZE = 25;
@@ -734,7 +700,7 @@ function useMemoTasks(todayNum) {
     const tasks = [];
     PLAN_365.forEach((d) => {
       CLIPBOARD_TRACKS.forEach((t) => {
-        tasks.push({ day: d.day, key: t.key, type: t.label, color: t.color, icon: t.icon, content: trackContent(d, t.key), stage: stageLabel(d) });
+        tasks.push({ day: d.day, key: t.key, type: t.label, color: t.color, icon: t.icon, content: d[t.key], stage: d.stage });
       });
     });
     return tasks;
@@ -806,6 +772,16 @@ const clipTypePill = (active, color) => ({
   borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
 });
 
+const TRACK_COLORS = {
+  fullstack: "#6EE7B7", dsa: "#FCD34D", coreCS: "#93C5FD", aiml: "#C4B5FD", placement: "#FB923C",
+};
+const TRACK_LABELS = {
+  fullstack: "Full Stack", dsa: "DSA", coreCS: "Core CS", aiml: "AI/ML", placement: "Placement",
+};
+const TRACK_ICONS = {
+  fullstack: Code2, dsa: Brain, coreCS: BookOpen, aiml: Sparkles, placement: Trophy,
+};
+
 function ConsistencyProgressPanel({ engineState = {}, readiness, progress }) {
   const completedMap  = engineState.completedDays || {};
   const completedDays = Object.keys(completedMap).length;
@@ -818,135 +794,301 @@ function ConsistencyProgressPanel({ engineState = {}, readiness, progress }) {
   const missedDays  = PLAN_365.filter((d) => d.day < todayNum && !completedMap[d.day]);
   const missedCount = missedDays.length;
 
+  // Completion % across the whole 365-day plan vs. % of the year already elapsed
+  const completionPct = Math.round((completedDays / 365) * 100);
+  const onPace         = completionPct >= yp;
+
+  // Whichever track currently has the highest readiness %
+  const bestTrackEntry = readiness
+    ? Object.entries(readiness.byTrack || {}).sort((a, b) => b[1] - a[1])[0]
+    : null;
+  const bestTrack = bestTrackEntry
+    ? { label: TRACK_LABELS[bestTrackEntry[0]] || bestTrackEntry[0], color: TRACK_COLORS[bestTrackEntry[0]] || "#93C5FD" }
+    : null;
+
   // This week — last 7 days, which are marked done
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const dayNum = Math.floor((d - new Date("2026-07-01T00:00:00")) / 86400000) + 1;
-    const plan   = PLAN_365[dayNum - 1];
-    const done   = !!(engineState.completedDays || {})[dayNum];
+    const done   = !!completedMap[dayNum];
     days.push({ dayNum, date: d, done, label: d.toLocaleDateString(undefined, { weekday: "short" }) });
   }
 
-  const TRACK_COLORS = {
-    fullstack: "#6EE7B7", dsa: "#FCD34D", coreCS: "#93C5FD", aiml: "#C4B5FD", placement: "#FB923C",
-  };
-  const TRACK_LABELS = {
-    fullstack: "Full Stack", dsa: "DSA", coreCS: "Core CS", aiml: "AI/ML", placement: "Placement",
-  };
-
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+    <>
+      {/* KPI strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 16 }}>
+        <KpiTile icon={CheckCircle2}  value={completedDays}  label="DAYS DONE"   sub="of 365 total"  color="#6EE7B7" />
+        <KpiTile icon={AlertTriangle} value={missedCount}    label="MISSED"      sub="need catch-up"  color="#FCA5A5" />
+        <KpiTile icon={Brain}         value={dsaSolved}      label="DSA SOLVED"  sub="problems"       color="#FCD34D" />
+        <KpiTile icon={GitCommit}     value={githubCommits}  label="COMMITS"     sub="all time"       color="#93C5FD" />
+      </div>
 
-      {/* Left — Stats + readiness */}
-      <Card>
-        <SectionLabel>CONSISTENCY PROGRESS</SectionLabel>
+      {/* Readiness (rings + tracks) and This Week — natural heights, never force-stretched */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
-        {/* Big stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
-          <BigStat value={completedDays} label="DAYS DONE" sub="/ 365" color="#6EE7B7" />
-          <BigStat value={missedCount}   label="MISSED"    sub="days"     color="#FCA5A5" />
-          <BigStat value={dsaSolved}     label="DSA SOLVED" sub={`/ ${DSA_YEAR_TARGET}`} color="#FCD34D" />
-          <BigStat value={githubCommits} label="COMMITS"    sub="total"    color="#93C5FD" />
-        </div>
-
-        {/* Missed days callout */}
-        {missedCount > 0 && (
-          <div style={{
-            display: "flex", flexDirection: "column", gap: 6,
-            padding: "10px 12px", marginBottom: 16, borderRadius: 8,
-            background: "rgba(252,165,165,0.08)", border: "1px solid rgba(252,165,165,0.25)",
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#FCA5A5" }}>
-              ⚠ {missedCount} missed day{missedCount > 1 ? "s" : ""} — go catch up
-            </span>
-            <span style={{ fontSize: 10, color: "#94A3B8" }}>
-              {missedDays.slice(0, 5).map((d) => `Day ${d.day}`).join(", ")}
-              {missedDays.length > 5 ? `, +${missedDays.length - 5} more` : ""}
+        <Card>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <SectionLabel style={{ marginBottom: 0 }}>READINESS</SectionLabel>
+            <span style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.04em", padding: "3px 9px", borderRadius: 20,
+              background: onPace ? "rgba(110,231,183,0.12)" : "rgba(252,165,165,0.12)",
+              border: `1px solid ${onPace ? "rgba(110,231,183,0.3)" : "rgba(252,165,165,0.3)"}`,
+              color: onPace ? "#6EE7B7" : "#FCA5A5",
+            }}>
+              {onPace ? "ON PACE" : "BEHIND PACE"}
             </span>
           </div>
-        )}
 
-        {/* Per-track readiness bars */}
-        {readiness && (
+          <div style={{ display: "flex", gap: 22, alignItems: "center", marginBottom: 20 }}>
+            <PaceRings elapsedPct={yp} completedPct={completionPct} readinessPct={readiness?.overall || 0} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 2 }}>Day {todayNum} <span style={{ color: "#334155" }}>/ 365</span></div>
+              <div style={{ fontSize: 10, color: "#475569", marginBottom: 12 }}>{yp}% of the year has passed</div>
+              <LegendRow color="#6EE7B7" label="Plan completed" value={`${completionPct}%`} />
+              <LegendRow color="#93C5FD" label="Overall readiness" value={`${readiness?.overall || 0}%`} />
+              {bestTrack && <LegendRow color={bestTrack.color} label="Strongest track" value={bestTrack.label} />}
+            </div>
+          </div>
+
+          {missedCount > 0 && (
+            <div style={{
+              display: "flex", flexDirection: "column", gap: 4,
+              padding: "9px 12px", marginBottom: 18, borderRadius: 8,
+              background: "rgba(252,165,165,0.07)", border: "1px solid rgba(252,165,165,0.22)",
+            }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#FCA5A5" }}>
+                <AlertTriangle size={12} /> {missedCount} missed day{missedCount > 1 ? "s" : ""} — go catch up
+              </span>
+              <span style={{ fontSize: 10, color: "#94A3B8", paddingLeft: 18 }}>
+                {missedDays.slice(0, 5).map((d) => `Day ${d.day}`).join(", ")}
+                {missedDays.length > 5 ? `, +${missedDays.length - 5} more` : ""}
+              </span>
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {Object.entries(TRACK_LABELS).map(([key, label]) => (
+              <TrackRow key={key} trackKey={key} label={label} pct={readiness?.byTrack?.[key] || 0} color={TRACK_COLORS[key]} />
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <SectionLabel>THIS WEEK</SectionLabel>
+          <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+            {days.map((d) => (
+              <div key={d.dayNum} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+                <span style={{ fontSize: 9, color: "#475569", fontWeight: 700 }}>{d.label.toUpperCase()}</span>
+                <div style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: d.done ? "rgba(110,231,183,0.15)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${d.done ? "#6EE7B744" : "rgba(255,255,255,0.06)"}`,
+                }}>
+                  {d.done
+                    ? <CheckCircle2 size={14} color="#6EE7B7" />
+                    : <span style={{ fontSize: 10, color: "#334155" }}>{d.date.getDate()}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <SectionLabel>NEXT 3 DAYS</SectionLabel>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {Object.entries(TRACK_LABELS).map(([key, label]) => {
-              const pct = readiness.byTrack?.[key] || 0;
+            {[1, 2, 3].map((offset) => {
+              const d      = new Date(); d.setDate(d.getDate() + offset);
+              const dayNum = Math.floor((d - new Date("2026-07-01T00:00:00")) / 86400000) + 1;
+              const p      = PLAN_365[dayNum - 1];
+              if (!p) return null;
               return (
-                <div key={key}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                    <span style={{ fontSize: 10, color: "#64748B" }}>{label}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: TRACK_COLORS[key] }}>{pct}%</span>
+                <div key={offset} style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "8px 10px",
+                  borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
+                  borderLeft: `2px solid ${p.dayType === "sunday" ? "#FCD34D55" : "rgba(255,255,255,0.08)"}`,
+                }}>
+                  <span style={{ fontSize: 10, color: "#475569", minWidth: 26, fontWeight: 700 }}>+{offset}d</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {p.t2}
+                    </div>
+                    <div style={{ fontSize: 9, color: "#475569", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.t3}</div>
                   </div>
-                  <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", background: TRACK_COLORS[key], borderRadius: 3, transition: "width 0.5s" }} />
-                  </div>
+                  <span style={{ fontSize: 9, color: p.dayType === "sunday" ? "#FCD34D" : "#475569", fontWeight: 700, flexShrink: 0 }}>
+                    {p.dayType === "sunday" ? "5h" : "3h"}
+                  </span>
                 </div>
               );
             })}
           </div>
-        )}
-      </Card>
+        </Card>
+      </div>
 
-      {/* Right — This week + upcoming */}
-      <Card>
-        <SectionLabel>THIS WEEK</SectionLabel>
-        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          {days.map((d) => (
-            <div key={d.dayNum} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 9, color: "#475569", fontWeight: 700 }}>{d.label.toUpperCase()}</span>
-              <div style={{
-                width: 32, height: 32, borderRadius: "50%",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                background: d.done ? "rgba(110,231,183,0.15)" : "rgba(255,255,255,0.03)",
-                border: `1px solid ${d.done ? "#6EE7B744" : "rgba(255,255,255,0.06)"}`,
-              }}>
-                {d.done
-                  ? <CheckCircle2 size={14} color="#6EE7B7" />
-                  : <span style={{ fontSize: 10, color: "#334155" }}>{d.date.getDate()}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Activity — a proper fixed-size contribution graph, full width */}
+      <ActivityCard completedMap={completedMap} todayNum={todayNum} />
+    </>
+  );
+}
 
-        <SectionLabel>NEXT 3 DAYS</SectionLabel>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[1, 2, 3].map((offset) => {
-            const d      = new Date(); d.setDate(d.getDate() + offset);
-            const dayNum = Math.floor((d - new Date("2026-07-01T00:00:00")) / 86400000) + 1;
-            const p      = PLAN_365[dayNum - 1];
-            if (!p) return null;
-            return (
-              <div key={offset} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "6px 10px",
-                borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-              }}>
-                <span style={{ fontSize: 10, color: "#475569", minWidth: 28, fontWeight: 700 }}>+{offset}d</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {p.focus}
-                  </div>
-                  <div style={{ fontSize: 9, color: "#475569", marginTop: 1 }}>{joinField(p.dsaTopic)}</div>
-                </div>
-                <span style={{ fontSize: 9, color: p.dayType === "sunday" ? "#FCD34D" : "#475569", fontWeight: 700, flexShrink: 0 }}>
-                  {p.dayType === "sunday" ? "5h" : "3h"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+function KpiTile({ icon: Icon, value, label, sub, color }) {
+  return (
+    <Card style={{ position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: color, opacity: 0.65 }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "#64748B" }}>{label}</span>
+        <Icon size={13} color={color} />
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 800, color: "#fff", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 10, color: "#475569", marginTop: 5 }}>{sub}</div>}
+    </Card>
+  );
+}
 
+function LegendRow({ color, label, value }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+      <span style={{ width: 7, height: 7, borderRadius: 2, background: color, flexShrink: 0 }} />
+      <span style={{ fontSize: 10, color: "#64748B", flex: 1 }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 700, color }}>{value}</span>
     </div>
   );
 }
 
-function BigStat({ value, label, sub, color }) {
+function TrackRow({ trackKey, label, pct, color }) {
+  const Icon = TRACK_ICONS[trackKey] || Circle;
   return (
-    <div style={{ textAlign: "center", padding: "10px 0" }}>
-      <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", letterSpacing: "0.06em", marginTop: 2 }}>{label}</div>
-      <div style={{ fontSize: 9, color: "#334155", marginTop: 1 }}>{sub}</div>
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Icon size={11} color={color} />
+          <span style={{ fontSize: 11, color: "#94A3B8" }}>{label}</span>
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 700, color }}>{pct}%</span>
+      </div>
+      <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.5s" }} />
+      </div>
     </div>
+  );
+}
+
+// Two concentric rings, Apple-Watch style: outer compares plan-completion vs.
+// year-elapsed on the same track; inner shows overall track readiness.
+function PaceRings({ elapsedPct, completedPct, readinessPct }) {
+  const size = 108, cx = size / 2, cy = size / 2;
+  const rOuter = 46, swOuter = 8;
+  const rInner = 32, swInner = 7;
+  const circO = 2 * Math.PI * rOuter;
+  const circI = 2 * Math.PI * rInner;
+  const arc = (circ, pct) => `${Math.max(0, (circ * Math.min(100, pct)) / 100)} ${circ}`;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={swOuter} />
+      <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth={swOuter}
+        strokeDasharray={arc(circO, elapsedPct)} strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`} />
+      <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="#6EE7B7" strokeWidth={swOuter}
+        strokeDasharray={arc(circO, completedPct)} strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ transition: "stroke-dasharray 0.6s" }} />
+      <circle cx={cx} cy={cy} r={rInner} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={swInner} />
+      <circle cx={cx} cy={cy} r={rInner} fill="none" stroke="#93C5FD" strokeWidth={swInner}
+        strokeDasharray={arc(circI, readinessPct)} strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ transition: "stroke-dasharray 0.6s" }} />
+      <text x={cx} y={cy - 3} textAnchor="middle" fontSize="19" fontWeight="800" fill="#fff" fontFamily="inherit">{completedPct}%</text>
+      <text x={cx} y={cy + 12} textAnchor="middle" fontSize="7.5" fontWeight="700" fill="#64748B" letterSpacing="0.05em" fontFamily="inherit">OF PLAN</text>
+    </svg>
+  );
+}
+
+const HEAT_COLOR = {
+  done: "#6EE7B7",
+  missed: "rgba(252,165,165,0.45)",
+  upcoming: "rgba(255,255,255,0.05)",
+};
+
+function buildHeatCells(completedMap, todayNum, weeks) {
+  const currentWeekIdx = Math.floor((todayNum - 1) / 7);
+  const startWeekIdx   = Math.max(0, currentWeekIdx - weeks + 1);
+  const cells = [];
+  for (let w = startWeekIdx; w <= currentWeekIdx; w++) {
+    for (let r = 0; r < 7; r++) {
+      const day = w * 7 + r + 1;
+      if (day > todayNum) cells.push({ day, state: "upcoming" });
+      else cells.push({ day, state: completedMap[day] ? "done" : "missed" });
+    }
+  }
+  return cells;
+}
+
+function computeStreaks(completedMap, todayNum) {
+  let current = 0;
+  for (let d = todayNum - 1; d >= 1; d--) {
+    if (completedMap[d]) current++; else break;
+  }
+  let longest = 0, run = 0;
+  for (let d = 1; d < todayNum; d++) {
+    if (completedMap[d]) { run++; longest = Math.max(longest, run); } else run = 0;
+  }
+  return { current, longest: Math.max(longest, current) };
+}
+
+// Github-style contribution graph — fixed-size tiles, weeks run left-to-right as columns.
+function ActivityCard({ completedMap, todayNum }) {
+  const weeks    = 16;
+  const cells    = buildHeatCells(completedMap, todayNum, weeks);
+  const streaks  = computeStreaks(completedMap, todayNum);
+
+  return (
+    <Card style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <SectionLabel style={{ marginBottom: 0 }}>ACTIVITY</SectionLabel>
+        <span style={{ fontSize: 10, color: "#475569" }}>last {weeks} weeks</span>
+      </div>
+
+      <div style={{ display: "flex", gap: 32, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div>
+          <div style={{ display: "grid", gridAutoFlow: "column", gridTemplateRows: "repeat(7, 11px)", gridAutoColumns: "11px", gap: 3 }}>
+            {cells.map((c) => (
+              <div
+                key={c.day}
+                title={`Day ${c.day} — ${c.state}`}
+                style={{
+                  width: 11, height: 11, borderRadius: 3,
+                  background: HEAT_COLOR[c.state],
+                  border: c.day === todayNum ? "1px solid #93C5FD" : "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 14, marginTop: 12 }}>
+            <LegendDot color="#6EE7B7" label="Done" />
+            <LegendDot color="rgba(252,165,165,0.6)" label="Missed" />
+            <LegendDot color="rgba(255,255,255,0.08)" label="Upcoming" />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 28 }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#6EE7B7", fontVariantNumeric: "tabular-nums" }}>{streaks.current}d</div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "#64748B", marginTop: 2 }}>CURRENT STREAK</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#93C5FD", fontVariantNumeric: "tabular-nums" }}>{streaks.longest}d</div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "#64748B", marginTop: 2 }}>LONGEST STREAK</div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function LegendDot({ color, label }) {
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 9, color: "#64748B" }}>
+      <span style={{ width: 8, height: 8, borderRadius: 2, background: color, display: "inline-block" }} />
+      {label}
+    </span>
   );
 }
