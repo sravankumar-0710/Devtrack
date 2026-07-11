@@ -3,10 +3,11 @@ import { Map, CheckCircle2, Circle } from "lucide-react";
 import { Card, SectionTitle, ProgressBar } from "../components/UI";
 import { RecordManager } from "../components/RecordManager";
 import { ROADMAP_FIELDS, CAREER_LEVELS } from "../data/consistencyConstants";
+import { PLAN_365, VOLUME_TITLES, getTodayPlan } from "../data/curriculum365";
 
-const TABS = ["Learning Roadmap", "Career Campaign"];
+const TABS = ["365-Day Plan", "Learning Roadmap", "Career Campaign"];
 
-export function RoadmapView({ roadmapItems, certifications, addItem, updateItem, deleteItem }) {
+export function RoadmapView({ roadmapItems, certifications, addItem, updateItem, deleteItem, engineState = {} }) {
   const [tab, setTab] = useState(TABS[0]);
 
   const completed = roadmapItems.filter((r) => r.status === "Completed").length;
@@ -14,6 +15,19 @@ export function RoadmapView({ roadmapItems, certifications, addItem, updateItem,
 
   // Career Campaign: a level is "reached" if any roadmap item or certification references it / is completed up to that index
   const reachedLevels = estimateLevelsReached(roadmapItems, certifications);
+
+  const completedDaysMap = engineState.completedDays || {};
+  const currentPlan = getTodayPlan();
+  const volumeStages = Object.entries(VOLUME_TITLES).map(([vol, title]) => {
+    const days = PLAN_365.filter((d) => d.volume === Number(vol));
+    const done = days.filter((d) => completedDaysMap[d.day]).length;
+    return {
+      volume: Number(vol), title, done, total: days.length,
+      pct: days.length ? Math.round((done / days.length) * 100) : 0,
+      isCurrent: currentPlan?.volume === Number(vol),
+      firstDay: days[0]?.day, lastDay: days[days.length - 1]?.day,
+    };
+  });
 
   return (
     <div style={{ maxWidth: 980, margin: "0 auto", padding: "28px 24px" }}>
@@ -44,6 +58,45 @@ export function RoadmapView({ roadmapItems, certifications, addItem, updateItem,
           </button>
         ))}
       </div>
+
+      {tab === "365-Day Plan" && (
+        <Card>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 4 }}>
+            The 7-Volume Curriculum
+          </h3>
+          <div style={{ fontSize: 11, color: "#64748B", marginBottom: 16 }}>
+            Real progress, pulled straight from your daily plan completions.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {volumeStages.map((v) => {
+              const doneAll = v.done === v.total;
+              return (
+                <div key={v.volume} style={{
+                  padding: "12px 14px", borderRadius: 10,
+                  background: v.isCurrent ? "rgba(110,231,183,0.06)" : "rgba(255,255,255,0.02)",
+                  border: `1px solid ${v.isCurrent ? "rgba(110,231,183,0.3)" : "rgba(255,255,255,0.06)"}`,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    {doneAll ? <CheckCircle2 size={15} color="#6EE7B7" /> : <Circle size={15} color={v.isCurrent ? "#6EE7B7" : "#475569"} />}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>
+                      Volume {v.volume} — {v.title}
+                    </span>
+                    {v.isCurrent && (
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "#6EE7B7", background: "rgba(110,231,183,0.12)", padding: "2px 6px", borderRadius: 4 }}>
+                        IN PROGRESS
+                      </span>
+                    )}
+                    <span style={{ fontSize: 11, color: "#64748B", marginLeft: "auto" }}>
+                      Days {v.firstDay}–{v.lastDay} &middot; {v.done}/{v.total}
+                    </span>
+                  </div>
+                  <ProgressBar pct={v.pct} color="#6EE7B7" height={6} />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {tab === "Learning Roadmap" && (
         <RecordManager

@@ -12,7 +12,10 @@ import {
   fmtDuration, fmtH, today,
   buildDailyChartData, buildCategoryData, buildMonthlyTrendData, buildMonthDailyData,
 } from "../utils/helpers";
-import { getTodayPlan, yearProgress, todayDayNum, PLAN_365, dateForDay, joinField, stageLabel, DSA_YEAR_TARGET } from "../data/curriculum365";
+import {
+  getTodayPlan, yearProgress, todayDayNum, PLAN_365, dateForDay, joinField, stageLabel, DSA_YEAR_TARGET,
+  PLANNED_CERTIFICATIONS, activeCertifications, nextCertification as nextSyllabusCertification, certStatus,
+} from "../data/curriculum365";
 import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy, ClipboardList, Search, X, Award, Target } from "lucide-react";
 
 // Map the 4 legacy track keys (kept for Firebase-state backward-compat) onto
@@ -102,6 +105,7 @@ export function Dashboard({
         isTrackComplete={isTrackComplete}
         engineState={engineState}
       />
+      <CertificationRoadmapCard />
       <ConsistencyProgressPanel
         engineState={engineState}
         readiness={readiness}
@@ -460,6 +464,62 @@ function MissionTile({ label, value, sub }) {
     </div>
   );
 }
+function CertificationRoadmapCard() {
+  const dayNum = todayDayNum();
+  const active = activeCertifications(dayNum);
+  const next = nextSyllabusCertification(dayNum);
+  const doneCount = PLANNED_CERTIFICATIONS.filter((c) => certStatus(c, dayNum) === "done").length;
+
+  if (dayNum < 1 || dayNum > 365) return null;
+
+  return (
+    <Card style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Award size={15} color="#FCD34D" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.06em" }}>
+            CERTIFICATION ROADMAP
+          </span>
+        </div>
+        <span style={{ fontSize: 11, color: "#64748B" }}>
+          {doneCount} of {PLANNED_CERTIFICATIONS.length} tracks completed
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(252,211,77,0.06)", border: "1px solid rgba(252,211,77,0.2)" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#FCD34D", letterSpacing: "0.05em", marginBottom: 6 }}>
+            {active.length > 1 ? "WORKING ON NOW" : "WORKING ON NOW"}
+          </div>
+          {active.length > 0 ? (
+            active.map((c) => (
+              <div key={c.name} style={{ fontSize: 13, color: "#E2E8F0", fontWeight: 600, marginBottom: 2 }}>
+                {c.name} <span style={{ color: "#64748B", fontWeight: 400 }}>· {c.provider}</span>
+              </div>
+            ))
+          ) : (
+            <div style={{ fontSize: 13, color: "#64748B" }}>Nothing scheduled today — a light day.</div>
+          )}
+        </div>
+
+        <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(196,181,253,0.06)", border: "1px solid rgba(196,181,253,0.2)" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#C4B5FD", letterSpacing: "0.05em", marginBottom: 6 }}>NEXT UP</div>
+          {next ? (
+            <div style={{ fontSize: 13, color: "#E2E8F0", fontWeight: 600 }}>
+              {next.name} <span style={{ color: "#64748B", fontWeight: 400 }}>· {next.provider}</span>
+              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 400, marginTop: 2 }}>
+                Starts Day {next.startDay} (Week {next.startWeek})
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: "#64748B" }}>You've reached the final certification track. 🎉</div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, isTrackComplete, engineState }) {
   const plan = getTodayPlan();
   const yp   = Math.round(yearProgress() * 100);

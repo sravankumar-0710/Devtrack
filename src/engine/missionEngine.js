@@ -19,7 +19,10 @@ import { flattenCurriculum, TRACKS } from "../data/curriculum";
  */
 
 export function emptyEngineState() {
-  return { cursor: 0, completed: {}, missions: {}, dsaSolved: {}, githubCommits: {} };
+  return {
+    cursor: 0, completed: {}, missions: {}, dsaSolved: {}, githubCommits: {},
+    completedDays: {}, completedTracks: {}, trackDsaLog: {},
+  };
 }
 
 const WEEKDAY_BUDGET_MIN = 150; // 2.5h average of the 2-3h weekday window
