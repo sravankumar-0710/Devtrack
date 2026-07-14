@@ -21,6 +21,7 @@ const COLLECTIONS = [
   "studySessions",
   "dailyTasks",
   "weeklyReviews",
+  "linkCards",
 ];
 
 export function useConsistencyData(uid) {

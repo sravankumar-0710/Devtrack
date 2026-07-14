@@ -6,7 +6,45 @@ import {
 } from "lucide-react";
 import { Card } from "../components/Card";
 import { getTodayPlan, yearProgress, PLAN_START_DATE, joinField, stageLabel, DSA_YEAR_TARGET } from "../data/curriculum365";
-import { Award, Target as TargetIcon, ListChecks } from "lucide-react";
+import { classifyDsaTopic } from "../data/dsaTopicGuide";
+import { Award, Target as TargetIcon, ListChecks, ExternalLink } from "lucide-react";
+
+const DIFFICULTY_COLORS = { Easy: "#6EE7B7", Medium: "#FCD34D", Hard: "#FCA5A5", Mixed: "#C4B5FD" };
+
+/** Difficulty badge + real LeetCode/HackerRank practice links for a day's DSA topic(s). */
+function DsaPracticeLinks({ topics }) {
+  const resolved = (topics || []).map(classifyDsaTopic).filter(Boolean);
+  if (!resolved.length) return null;
+  return (
+    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      {resolved.map((r, i) => (
+        <div key={i} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: i < resolved.length - 1 ? 6 : 0 }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+            color: DIFFICULTY_COLORS[r.difficulty] || "#94A3B8",
+            background: `${DIFFICULTY_COLORS[r.difficulty] || "#94A3B8"}1A`,
+          }}>
+            {r.difficulty}
+          </span>
+          <span style={{ fontSize: 10, color: "#94A3B8" }}>{r.topic}</span>
+          {r.leetcodeUrl && (
+            <a href={r.leetcodeUrl} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#FCD34D", display: "flex", alignItems: "center", gap: 2, textDecoration: "none" }}>
+              LeetCode <ExternalLink size={9} />
+            </a>
+          )}
+          {r.hackerrankUrl && (
+            <a href={r.hackerrankUrl} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#6EE7B7", display: "flex", alignItems: "center", gap: 2, textDecoration: "none" }}>
+              HackerRank <ExternalLink size={9} />
+            </a>
+          )}
+          {!r.leetcodeUrl && !r.hackerrankUrl && (
+            <span style={{ fontSize: 10, color: "#475569", fontStyle: "italic" }}>revise problems you've already solved</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 import { ReadinessPanel } from "../components/ReadinessPanel";
 import { QUOTES } from "../data/consistencyConstants";
 import { fmtDuration } from "../utils/helpers";
@@ -171,6 +209,7 @@ export function DailyPlanView({
               content={joinField(plan.dsaTopic)}
               done={isTrackComplete ? isTrackComplete(plan.day, "t3") : false}
               onToggle={() => toggleTrackComplete?.(plan.day, "t3")}
+              footer={<DsaPracticeLinks topics={plan.dsaTopic} />}
             />
             <TrackCard
               icon={<Wrench size={15} color="#FB923C" />}
@@ -264,7 +303,7 @@ export function DailyPlanView({
 
 // ─── sub-components ───────────────────────────────────────────────────────
 
-function TrackCard({ icon, label, accent, duration, content, done = false, onToggle }) {
+function TrackCard({ icon, label, accent, duration, content, done = false, onToggle, footer }) {
   return (
     <div style={{
       borderRadius: 10, padding: "14px 16px",
@@ -291,6 +330,7 @@ function TrackCard({ icon, label, accent, duration, content, done = false, onTog
         {content}
       </div>
       <div style={{ fontSize: 10, color: accent, fontWeight: 700 }}>{duration}</div>
+      {footer}
     </div>
   );
 }

@@ -16,7 +16,10 @@ import {
   getTodayPlan, yearProgress, todayDayNum, PLAN_365, dateForDay, joinField, stageLabel, DSA_YEAR_TARGET,
   PLANNED_CERTIFICATIONS, activeCertifications, nextCertification as nextSyllabusCertification, certStatus,
 } from "../data/curriculum365";
-import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy, ClipboardList, Search, X, Award, Target } from "lucide-react";
+import { classifyDsaTopic } from "../data/dsaTopicGuide";
+import { BookOpen, Code2, Brain, Wrench, CalendarDays, CheckCircle2, Circle, Trophy, ClipboardList, Search, X, Award, Target, ExternalLink } from "lucide-react";
+
+const DIFFICULTY_COLORS = { Easy: "#6EE7B7", Medium: "#FCD34D", Hard: "#FCA5A5", Mixed: "#C4B5FD" };
 
 // Map the 4 legacy track keys (kept for Firebase-state backward-compat) onto
 // the real syllabus fields.
@@ -528,10 +531,23 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, i
 
   if (!plan) return null;
 
+  const dsaResolved = (plan.dsaTopic || []).map(classifyDsaTopic).filter(Boolean);
   const tracks = [
     { key: "t1", icon: <BookOpen size={13} color="#93C5FD" />, label: "LEARN",    content: trackContent(plan, "t1"), color: "#93C5FD", time: plan.dayType === "sunday" ? "90m" : "60m" },
     { key: "t2", icon: <Code2    size={13} color="#6EE7B7" />, label: "PRACTICE", content: trackContent(plan, "t2"), color: "#6EE7B7", time: plan.dayType === "sunday" ? "75m" : "45m" },
-    { key: "t3", icon: <Brain    size={13} color="#FCD34D" />, label: "DSA",      content: trackContent(plan, "t3"), color: "#FCD34D", time: plan.dayType === "sunday" ? "75m" : "45m" },
+    {
+      key: "t3", icon: <Brain size={13} color="#FCD34D" />, label: "DSA", content: trackContent(plan, "t3"), color: "#FCD34D",
+      time: plan.dayType === "sunday" ? "75m" : "45m",
+      badge: dsaResolved[0] && (
+        <span style={{
+          fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3,
+          color: DIFFICULTY_COLORS[dsaResolved[0].difficulty] || "#94A3B8",
+          background: `${DIFFICULTY_COLORS[dsaResolved[0].difficulty] || "#94A3B8"}1A`,
+        }}>
+          {dsaResolved[0].difficulty}
+        </span>
+      ),
+    },
     { key: "t4", icon: <Wrench   size={13} color="#FB923C" />, label: "PROJECT",  content: trackContent(plan, "t4"), color: "#FB923C", time: plan.dayType === "sunday" ? "60m" : "30m" },
   ];
 
@@ -621,6 +637,26 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, i
         )}
       </div>
 
+      {/* DSA practice links — real, working links per topic (see dsaTopicGuide.js) */}
+      {dsaResolved.length > 0 && (dsaResolved[0].leetcodeUrl || dsaResolved[0].hackerrankUrl) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12, marginTop: -4 }}>
+          {dsaResolved.map((r, i) => (
+            <span key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10 }}>
+              {r.leetcodeUrl && (
+                <a href={r.leetcodeUrl} target="_blank" rel="noreferrer" style={{ color: "#FCD34D", display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}>
+                  {r.topic} on LeetCode <ExternalLink size={9} />
+                </a>
+              )}
+              {r.hackerrankUrl && (
+                <a href={r.hackerrankUrl} target="_blank" rel="noreferrer" style={{ color: "#6EE7B7", display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}>
+                  HackerRank <ExternalLink size={9} />
+                </a>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Weekly mini project banner (only shows on the day it's assigned) */}
       {plan.weeklyMiniProject?.length > 0 && (
         <div style={{ marginTop: 4, padding: "10px 12px", borderRadius: 8, background: "rgba(110,231,183,0.06)", border: "1px solid rgba(110,231,183,0.2)" }}>
@@ -632,7 +668,7 @@ function DailyPlanStrip({ markDayComplete, isDayComplete, toggleTrackComplete, i
   );
 }
 
-function TrackMini({ icon, label, content, color, time, done, onToggle }) {
+function TrackMini({ icon, label, content, color, time, done, onToggle, badge }) {
   return (
     <div
       onClick={onToggle}
@@ -658,7 +694,10 @@ function TrackMini({ icon, label, content, color, time, done, onToggle }) {
       }}>
         {content}
       </div>
-      <span style={{ fontSize: 9, color, fontWeight: 700 }}>{time}</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 9, color, fontWeight: 700 }}>{time}</span>
+        {badge}
+      </div>
     </div>
   );
 }

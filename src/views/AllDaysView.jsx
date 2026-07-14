@@ -5,7 +5,9 @@ import {
 } from "lucide-react";
 import { Card } from "../components/Card";
 import { PLAN_365, dateForDay, todayDayNum, joinField } from "../data/curriculum365";
+import { classifyDsaTopic } from "../data/dsaTopicGuide";
 
+const DIFFICULTY_COLORS = { Easy: "#6EE7B7", Medium: "#FCD34D", Hard: "#FCA5A5", Mixed: "#C4B5FD" };
 const TRACK_FIELD = { t1: "learn", t2: "practice", t3: "dsaTopic", t4: "project" };
 const groupLabel = (d) => `Volume ${d.volume} — ${d.volumeTitle}`;
 
@@ -310,6 +312,29 @@ function DayRow({ plan, isToday, done, onMarkDone, onUndo, isTrackComplete, onTo
               <b style={{ color: "#64748B" }}>Checkpoint:</b> {joinField(plan.checkpoint)}
             </div>
           )}
+
+          {(() => {
+            const dsaResolved = (plan.dsaTopic || []).map(classifyDsaTopic).filter(Boolean);
+            if (!dsaResolved.length) return null;
+            return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 11, marginBottom: 8 }}>
+                {dsaResolved.map((r, i) => (
+                  <span key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4,
+                      color: DIFFICULTY_COLORS[r.difficulty] || "#94A3B8",
+                      background: `${DIFFICULTY_COLORS[r.difficulty] || "#94A3B8"}1A`,
+                    }}>
+                      {r.difficulty}
+                    </span>
+                    <span style={{ color: "#94A3B8" }}>{r.topic}</span>
+                    {r.leetcodeUrl && <a href={r.leetcodeUrl} target="_blank" rel="noreferrer" style={{ color: "#FCD34D", textDecoration: "none" }}>LeetCode ↗</a>}
+                    {r.hackerrankUrl && <a href={r.hackerrankUrl} target="_blank" rel="noreferrer" style={{ color: "#6EE7B7", textDecoration: "none" }}>HackerRank ↗</a>}
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
 
           {plan.weeklyMiniProject?.length > 0 && (
             <div style={{ fontSize: 11, color: "#6EE7B7", marginBottom: 8 }}>

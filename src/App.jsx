@@ -39,6 +39,7 @@ import { DailyMissionView }   from "./views/DailyMissionView";
 import { DailyPlanView } from "./views/DailyPlanView";
 import { AllDaysView } from "./views/AllDaysView";
 import { SyllabusResourcesView } from "./views/SyllabusResourcesView";
+import { LinkVaultView } from "./views/LinkVaultView";
 import { useMissionEngine } from "./hooks/useMissionEngine";
 
 const VIEW_MAP = {
@@ -64,6 +65,7 @@ const VIEW_MAP = {
   statistics:     StatisticsView,
   placement:      PlacementView,
   weeklyReview:   WeeklyReviewView,
+  linkVault:      LinkVaultView,
 };
 
 export default function App() {
@@ -87,7 +89,7 @@ export default function App() {
   // ── Project Consistency data (Goals, Roadmap, Certifications, Habits, etc) ──
   const {
     lifeGoals, habits, certifications, notes, resources, roadmapItems, placementItems,
-    devProjects, studySessions, dailyTasks, weeklyReviews,
+    devProjects, studySessions, dailyTasks, weeklyReviews,linkCards,
     mission, synced: consistencySynced,
     addItem, updateItem, deleteItem, saveMission,
   } = useConsistencyData(user?.uid);
@@ -170,7 +172,7 @@ export default function App() {
     // Project Consistency
     
     lifeGoals, habits, certifications, notes, resources, roadmapItems, placementItems,
-    devProjects, studySessions, dailyTasks, weeklyReviews,
+    devProjects, studySessions, dailyTasks, weeklyReviews,linkCards,
     mission, saveMission,
     addItem, updateItem, deleteItem,
         // Mission Engine (365-day plan)
